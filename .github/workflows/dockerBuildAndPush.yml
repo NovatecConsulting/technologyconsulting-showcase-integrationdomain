@@ -1,0 +1,56 @@
+name: dockerBuildAndPush
+on:
+  push:
+    branches:
+      - main
+      - ccloud
+env:
+  containerimagetag: ${GITHUB_SHA}
+  containerregistry: nttcshowcase.azurecr.io
+  containerimagerepository: technologyconsulting-showcase-integrationdomain
+  containerregistrysericeconnection: acr-sc
+
+jobs:
+  build_Stage_Docker_Build_Push:
+    runs-on: ubuntu-latest
+    name: Deploy Confluent-Platform
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Get secrets
+        env:
+          ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
+          STAGE: 'dev'
+        working-directory: ./helperscripts
+        run: |
+          chmod +x ./getKeyVaultSecrets.sh
+          ./getKeyVaultSecrets.sh
+
+      - name: Add SHORT_SHA env property with commit short sha
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
+      - name: Build and push Connector image
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.TC_SHOWCASE_DOCKERHUB_USER }}
+          password: ${{ secrets.TC_SHOWCASE_DOCKERHUB_PASSWORD }}
+          dockerfile: ./docker/Dockerfile.connect
+          build_args: |
+            CONNECTORS=confluentinc/kafka-connect-jdbc:5.5.0
+          repository: novatec/tc-integrationdomain-kafka-connect
+          tags: latest, ${{ env.SHORT_SHA }}
+          tag_with_sha: true
+
+      - name: Build and push Deploy images
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.TC_SHOWCASE_DOCKERHUB_USER }}
+          password: ${{ secrets.TC_SHOWCASE_DOCKERHUB_PASSWORD }}
+          dockerfile: ./docker/Dockerfile.deploy
+          repository: novatec/tc-integrationdomain-connector-deploy
+          tags: latest, ${{ env.SHORT_SHA }}
+          tag_with_sha: true

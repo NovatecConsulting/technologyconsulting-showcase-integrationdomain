@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{.Release.Name}}-deploy-emob
+  labels:
+    release: {{.Release.Name}}
+spec:
+  template:
+    spec:
+      containers:
+       - name: deploy-connectors
+         image: {{.Values.image}}
+         command:
+           - bash
+           - /connectors-config/connectors-deploy.sh
+         volumeMounts:
+           - name: config
+             mountPath: "/connectors-config"
+             readOnly: true
+         env:
+           - name: KAFKA_BOOTSTRAP_SERVER
+             value: {{.Values.kafkaBootstrapServer}}
+           - name: CONNECT_REST_API_URL
+             value: {{.Values.kafkaConnectRestApi}}
+      restartPolicy: Never
+      volumes:
+        # You set volumes at the Pod level, then mount them into containers inside that Pod
+        - name: config
+          configMap:
+            # Provide the name of the ConfigMap you want to mount.
+            name: {{.Release.Name}}-configs
+  backoffLimit: 4

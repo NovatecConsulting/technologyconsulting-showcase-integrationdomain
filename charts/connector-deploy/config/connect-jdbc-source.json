@@ -1,0 +1,19 @@
+{
+  "name": "postgres_cdc_source",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+    "tasks.max": "1",
+    "connection.url": "jdbc:postgresql://tc-showcase-test-psql.postgres.database.azure.com:5432/order_db-dev",
+    "connection.user": "${azure:vault-tc-showcase-test.vault.azure.net:database-user}",
+    "connection.password": "${azure:vault-tc-showcase-test.vault.azure.net:database-password}",
+    "mode": "timestamp+incrementing",
+    "incrementing.column.name": "c_id",
+    "timestamp.column.name": "updated_at",
+    "topic.prefix": "tc_showcase_source_",
+    "table.whitelist": "o_customer",
+    "dialect.name": "PostgreSqlDatabaseDialect",
+    "transforms": "createkey",
+    "transforms.createkey.type": "org.apache.kafka.connect.transforms.ValueToKey",
+    "transforms.createkey.fields": "c_id"
+  }
+}

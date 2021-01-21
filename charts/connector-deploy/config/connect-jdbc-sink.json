@@ -1,0 +1,17 @@
+{
+    "name": "postgres_cdc_sink",
+    "config": {
+        "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+        "tasks.max": 1,
+        "topics": "tc_showcase_sink",
+        "connection.url": "jdbc:postgresql://tc-showcase-test-psql.postgres.database.azure.com:5432/order_db-dev",
+        "connection.user": "${azure:vault-tc-showcase-test.vault.azure.net:database-user}",
+        "connection.password": "${azure:vault-tc-showcase-test.vault.azure.net:database-password}",
+        "auto.create": "true",
+        "table.name.format": "tc_showcase",
+        "dialect.name": "PostgreSqlDatabaseDialect",
+        "db.timezone": "Europe/Berlin",
+        "pk.mode": "record_key",
+        "insert.mode": "upsert"
+    }
+}
