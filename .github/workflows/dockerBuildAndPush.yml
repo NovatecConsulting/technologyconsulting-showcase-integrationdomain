@@ -1,0 +1,73 @@
+name: dockerBuildAndPush
+on:
+  push:
+    branches:
+      - master
+      - deploy-debezium
+env:
+  containerimagetag: ${GITHUB_SHA}
+  containerregistry: nttcshowcase.azurecr.io
+  containerimagerepository: technologyconsulting-showcase-integrationdomain
+  containerregistrysericeconnection: acr-sc
+
+jobs:
+  build_Stage_Docker_Build_Push:
+    runs-on: ubuntu-latest
+    name: edit worker-config
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Get secrets
+        env:
+          ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
+        working-directory: ./resources/pipelines/helperscripts
+        run: |
+          chmod +x ./getKeyVaultSecrets.sh
+          ./getKeyVaultSecrets.sh
+
+      - name: Add SHORT_SHA env property with commit short sha
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
+ #     - name: test
+ #       uses: pCYSl5EDgo/cat@master
+  #      with:
+   #       path: /resources/k8s/deployments/confluent-platform/connect-worker.properties
+   #       shell: bash
+
+      - name: edit worker-config
+        run: |
+          echo "config.providers.azure.param.azure.client.id=$CLIENT_ID" >> connect-worker.properties
+          echo "config.providers.azure.param.azure.tenant.id=$TENANT_ID" >> connect-worker.properties
+          echo "config.providers.azure.param.azure.secret.id=$SECRET_ID" >> connect-worker.properties
+        env:
+          CLIENT_ID: ${{secrets.TC_SHOWCASE_ARM_CLIENT_ID}}
+          TENANT_ID: ${{secrets.TC_SHOWCASE_ARM_TENANT_ID}}
+          SECRET_ID: ${{secrets.TC_SHOWCASE_ARM_CLIENT_SECRET}}
+
+      - name: Build and push Connector image
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.TC_SHOWCASE_DOCKERHUB_USER }}
+          password: ${{ secrets.TC_SHOWCASE_DOCKERHUB_PASSWORD }}
+          dockerfile: ./resources/k8s/deployments/confluent-platform/Dockerfile.connect
+          build-args: |
+            CONNECTORS=confluentinc/kafka-connect-jdbc:5.5.0 debezium/debezium-connector-postgresql:1.3.1
+          repository: novatec/technologyconsulting-showcase-integrationdomain
+          tags: latest, ${{ env.SHORT_SHA }}
+          tag_with_sha: true
+
+      - name: Build and push Deploy images
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.TC_SHOWCASE_DOCKERHUB_USER }}
+          password: ${{ secrets.TC_SHOWCASE_DOCKERHUB_PASSWORD }}
+          dockerfile: ./resources/k8s/deployments/deploy/Dockerfile.deploy
+          build-args: |
+            CPVERSION="5.5.0"
+          repository: novatec/technologyconsulting-showcase-integrationdomain
+          tags: latest, ${{ env.SHORT_SHA }}
+          tag_with_sha: true

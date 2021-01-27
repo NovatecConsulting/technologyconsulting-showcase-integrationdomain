@@ -1,0 +1,74 @@
+name: helmInstall
+
+on:
+  workflow_dispatch:
+
+  workflow_run:
+    workflows: ["dockerBuildAndPush"]
+    branches: [deploy-debezium]
+    types:
+      - completed
+
+env:
+  containerimagetag: ${GITHUB_SHA}
+  containerregistry: nttcshowcase.azurecr.io
+  containerimagerepository: technologyconsulting-showcase-integrationdomain
+  containerregistrysericeconnection: acr-sc
+
+jobs:
+  build_Stage_helm_deploy:
+    runs-on: ubuntu-latest
+    name: Helm install
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Get secrets
+        env:
+          ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
+        working-directory: ./resources/pipelines/helperscripts
+        run: |
+          chmod +x ./getKeyVaultSecrets.sh
+          ./getKeyVaultSecrets.sh
+
+      - name: Get Kubeconfig
+        env:
+          ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
+          AKSRESOURCEGROUP: 'tc-showcase-test'
+          AKSNAME: 'k8s-tc-showcase-test'
+        working-directory: ./resources/pipelines/helperscripts
+        run: |
+          chmod +x ./getKubeconfig.sh
+          ./getKubeconfig.sh
+
+      - name: Deploy via Helm
+        env:
+          ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
+          AKSRESOURCEGROUP: 'tc-showcase-test'
+          AKSNAME: 'k8s-tc-showcase-test'
+          IMAGETAG: ${{ env.SHORT_SHA }}
+        run: |
+          docker run \
+            -v "$(pwd)/resources/k8s":/apps \
+            -v "$(pwd)/resources/pipelines/helperscripts/kubeconfig":/root/.kube \
+            alpine/helm \
+                upgrade confluent-platform ./charts/confluent-platform \
+                  --namespace integrationdomain \
+                  --install \
+                  --values ./deployments/confluent-platform/kafka.values.yaml \
+                  --set app.networking.ingressfqdn="${INGRESSFQDN}" \
+                  --set app.image.tag="${IMAGETAG}" \
+                  --set app.azureconfig.resourcegroup="${AKSRESOURCEGROUP}" \
+                  --set app.azureconfig.loadbalancerip="${INTEGRATIONDOMAINIP}"
+
+  #upgrade confluent-platform ./charts/confluent-platform $(for file in ./deployments/confluent-platform/*.yaml; do echo "--values $file"; done)
+  #helm install confluent-platform ./charts/confluent-platform $(for file in ./deployments/confluent-platform/*.yaml; do echo "--values $file"; done)

@@ -3,12 +3,12 @@
   "config": {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
     "tasks.max": "1",
-    "database.hostname": "0.0.0.0",
+    "database.hostname": "tc-showcase-test-psql.postgres.database.azure.com",
     "database.port": "5432",
-    "database.user": "ntservice",
-    "database.password": "postgres",
-    "database.dbname" : "orderdomain",
-    "database.server.name": "dbserver1",
+    "database.user": "${azure:vault-tc-showcase-test.vault.azure.net:database-user}",
+    "database.password": "${azure:vault-tc-showcase-test.vault.azure.net:database-password}",
+    "database.dbname" : "orderdomain_db",
+    "database.server.name": "pgdatabaseserver",
     "schema.whitelist": "inventory"
   }
 }
