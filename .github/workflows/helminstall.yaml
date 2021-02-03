@@ -47,7 +47,7 @@ jobs:
           chmod +x ./getKubeconfig.sh
           ./getKubeconfig.sh
 
-      - name: Deploy via Helm Test
+      - name: Deploy via Helm
         env:
           ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
