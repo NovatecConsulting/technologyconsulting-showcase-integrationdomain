@@ -1,0 +1,3 @@
+kafkaBootstrapServer: confluent-platform-kafka:9092
+kafkaConnectRestApi: confluent-platform-kafka-connect:8083
+image: localhost:5000/cp-deploy-emob:5.5.0

@@ -1,0 +1,18 @@
+{
+    "name": "postgres_cdc_sink",
+    "config": {
+        "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+        "tasks.max": 1,
+        "topics": "tc_showcase_sink",
+        "connection.url": "jdbc:postgresql://tc-showcase-test-psql.postgres.database.azure.com:5432/orderdomain_db",
+        "connection.user": "${azure:vault-tc-showcase-test.vault.azure.net:database-user}",
+        "connection.password": "${azure:vault-tc-showcase-test.vault.azure.net:database-user}",
+        "auto.create": "true",
+        "value.converter": "io.confluent.connect.avro.AvroConverter",
+        "value.converter.schema.registry.url": "http://schema-registry:8081",
+        "table.name.format": "tc_showcase",
+        "pk.mode": "record_value",
+        "pk.fields": "ID",
+        "insert.mode": "upsert"
+    }
+}
