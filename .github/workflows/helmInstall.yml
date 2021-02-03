@@ -64,7 +64,7 @@ jobs:
                 upgrade confluent-platform ./charts/confluent-platform \
                   --namespace integrationdomain \
                   --install \
-                  --values ./deployments/confluent-platform/kafka.values.yaml \
+                  $(for file in ./deployments/confluent-platform/*.yaml; do echo "--values $file"; done) \
                   --set app.networking.ingressfqdn="${INGRESSFQDN}" \
                   --set app.image.tag="${IMAGETAG}" \
                   --set app.azureconfig.resourcegroup="${AKSRESOURCEGROUP}" \
