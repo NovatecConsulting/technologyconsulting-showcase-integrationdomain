@@ -73,17 +73,17 @@ jobs:
           tag_with_sha: true
 #     Moved Helm deloy & get kubeconfig temporary to this workflow due to problems with workflow_run
       - name: Get Kubeconfig
-          env:
-            ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
-            ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
-            ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
-            ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
-            AKSRESOURCEGROUP: 'tc-showcase-test'
-            AKSNAME: 'k8s-tc-showcase-test'
-          working-directory: ./resources/pipelines/helperscripts
-          run: |
-            chmod +x ./getKubeconfig.sh
-            ./getKubeconfig.sh
+        env:
+          ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
+          AKSRESOURCEGROUP: 'tc-showcase-test'
+          AKSNAME: 'k8s-tc-showcase-test'
+        working-directory: ./resources/pipelines/helperscripts
+        run: |
+          chmod +x ./getKubeconfig.sh
+          ./getKubeconfig.sh
 
       - name: Deploy via Helm
         env:
