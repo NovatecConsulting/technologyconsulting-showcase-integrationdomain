@@ -2,6 +2,7 @@ name: helmInstall
 
 on:
   workflow_dispatch:
+    ref: deploy-debezium
 
   workflow_run:
     workflows: ["dockerBuildAndPush"]
