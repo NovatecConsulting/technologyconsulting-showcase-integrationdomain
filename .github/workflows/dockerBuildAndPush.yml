@@ -71,3 +71,25 @@ jobs:
           repository: novatec/technologyconsulting-showcase-integrationdomain
           tags: latest, ${{ env.SHORT_SHA }}
           tag_with_sha: true
+#     Moved Helm deloy temporary to this workflow due to problems with workflow_run
+      - name: Deploy via Helm
+        env:
+          ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
+          AKSRESOURCEGROUP: 'tc-showcase-test'
+          AKSNAME: 'k8s-tc-showcase-test'
+          IMAGETAG: ${{ env.SHORT_SHA }}
+        run: |
+          docker run \
+            -v "$(pwd)/resources/k8s":/apps \
+            -v "$(pwd)/resources/pipelines/helperscripts/kubeconfig":/root/.kube \
+            alpine/helm \
+                upgrade confluent-platform ./charts/confluent-platform \
+                  --namespace integrationdomain \
+                  --install \
+                  --set app.networking.ingressfqdn="${INGRESSFQDN}" \
+                  --set app.image.tag="${IMAGETAG}" \
+                  --set app.azureconfig.resourcegroup="${AKSRESOURCEGROUP}" \
+                  --set app.azureconfig.loadbalancerip="${INTEGRATIONDOMAINIP}"
