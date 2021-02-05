@@ -59,7 +59,7 @@ kafka:
     # "advertised.listeners": |-
     # EXTERNAL://${HOST_IP}:$((31090 + ${KAFKA_BROKER_ID}))
     "listener.security.protocol.map": |-
-     PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+     INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
 
   ## Additional env variables
   customEnv:
