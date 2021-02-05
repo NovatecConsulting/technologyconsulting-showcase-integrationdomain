@@ -24,6 +24,7 @@ jobs:
           ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
+          STAGE: 'dev'
         working-directory: ./resources/pipelines/helperscripts
         run: |
           chmod +x ./getKeyVaultSecrets.sh
@@ -94,14 +95,21 @@ jobs:
           AKSRESOURCEGROUP: 'tc-showcase-test'
           AKSNAME: 'k8s-tc-showcase-test'
           IMAGETAG: ${{ env.SHORT_SHA }}
+          STAGE: 'dev'
         run: |
           docker run \
             -v "$(pwd)/resources/k8s":/apps \
             -v "$(pwd)/resources/pipelines/helperscripts/kubeconfig":/root/.kube \
             alpine/helm \
                 upgrade confluent-platform ./charts/confluent-platform \
-                  --namespace integrationdomain \
+                  --namespace "${STAGE}" \
                   --install \
+                  --values ./deployments/confluent-platform/connect.values.yaml
+                  --values ./deployments/confluent-platform/kafka.values.yaml
+                  --values ./deployments/confluent-platform/ksql.values.yaml
+                  --values ./deployments/confluent-platform/rest.values.yaml
+                  --values ./deployments/confluent-platform/sr.values.yaml
+                  --values ./deployments/confluent-platform/zookeeper.values.yaml
                   --set app.networking.ingressfqdn="${INGRESSFQDN}" \
                   --set app.image.tag="${IMAGETAG}" \
                   --set app.azureconfig.resourcegroup="${AKSRESOURCEGROUP}" \
