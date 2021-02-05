@@ -3,11 +3,11 @@ name: helmInstall
 on:
   workflow_dispatch:
 
-  workflow_run:
-    workflows: ["dockerBuildAndPush"]
-    branches: [deploy-debezium]
-    types:
-      - completed
+  #workflow_run:
+  #  workflows: ["dockerBuildAndPush"]
+  #  branches: [deploy-debezium]
+  #  types:
+  #    - completed
 
 env:
   containerimagetag: ${GITHUB_SHA}
