@@ -63,7 +63,7 @@ kafka:
 
   ## Additional env variables
   customEnv:
-    KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    KAFKA_ZOOKEEPER_CONNECT: confluent-platform-zookeeper:2181
     # KAFKA_METRIC_REPORTERS: "io.confluent.metrics.reporter.ConfluentMetricsReporter"
     # CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: "localhost:9092"
 
