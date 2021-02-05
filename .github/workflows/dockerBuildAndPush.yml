@@ -105,6 +105,7 @@ jobs:
                   --namespace "${STAGE}" \
                   --install \
                   --values ./deployments/confluent-platform/connect.values.yaml \
+                  --set kafka-connect.image=novatec/technologyconsulting-showcase-integrationdomain:latest \
                   --values ./deployments/confluent-platform/kafka.values.yaml \
                   --values ./deployments/confluent-platform/ksql.values.yaml \
                   --values ./deployments/confluent-platform/rest.values.yaml \
