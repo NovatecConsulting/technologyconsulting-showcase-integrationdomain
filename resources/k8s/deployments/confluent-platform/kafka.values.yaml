@@ -1,4 +1,4 @@
-cp-kafka:
+kafka:
   # Default values for cp-kafka.
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
@@ -140,7 +140,7 @@ cp-kafka:
   ## ------------------------------------------------------
   ## Zookeeper
   ## ------------------------------------------------------
-  cp-zookeeper:
+  zookeeper:
     ## If true, install the cp-zookeeper chart alongside cp-kafka
     ## ref: ../cp-zookeeper
     enabled: true

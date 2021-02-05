@@ -142,7 +142,7 @@ zookeeper:
   ## If true, install the zookeeper chart alongside kafka
   ## ref: ../zookeeper
   enabled: true
-  servers: 3
+  servers: 1
   persistence:
     enabled: true
     dataDirSize: 5Gi
