@@ -105,8 +105,8 @@ jobs:
                   --namespace "${STAGE}" \
                   --install \
                   --values ./deployments/confluent-platform/connect.values.yaml \
-                  --set kafka-connect.image="novatec/technologyconsulting-showcase-integrationdomain" \
-                  --set kafka-connect.imageTag="latest" \
+                  --set kafka-connect.image="cp-kafka-connect" \
+                  --set kafka-connect.imageTag="5.5.0 \
                   --values ./deployments/confluent-platform/kafka.values.yaml \
                   --values ./deployments/confluent-platform/ksql.values.yaml \
                   --values ./deployments/confluent-platform/rest.values.yaml \
@@ -116,3 +116,5 @@ jobs:
                   --set app.image.tag="${IMAGETAG}" \
                   --set app.azureconfig.resourcegroup="${AKSRESOURCEGROUP}" \
                   --set app.azureconfig.loadbalancerip="${INTEGRATIONDOMAINIP}"
+
+#novatec/technologyconsulting-showcase-integrationdomain
