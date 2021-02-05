@@ -1,4 +1,4 @@
-FROM confluentinc/cp-server-connect-base:5.5.0
+FROM confluentinc/cp-kafka-connect-base:5.5.0
 #ADD  resources/k8s/deployments/confluent-platform/connect-worker.properties /usr/local/share/kafka/plugins
 #RUN wget https://github.com/lensesio/secret-provider/releases/download/0.0.1/secret-provider-0.0.1-all.jar -P /usr/local/share/kafka/plugins
 #RUN export CLASSPATH=/usr/local/share/kafka/plugins/secret-provider-0.0.1-all.jar
