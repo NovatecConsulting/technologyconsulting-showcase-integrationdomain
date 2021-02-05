@@ -7,7 +7,7 @@
 ## ------------------------------------------------------
 
 ## Number of Kafka brokers
-brokers: 3
+brokers: 1
 
 ## Image Info
 ## ref: https://hub.docker.com/r/confluentinc/kafka/
