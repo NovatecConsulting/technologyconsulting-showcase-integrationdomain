@@ -7,7 +7,7 @@ kafka-connect:
 
   ## Image Info
   ## ref: https://hub.docker.com/r/confluentinc/cp-kafka/
-  image: localhost:5000/cp-connect-emob
+  image:
   imageTag: 5.5.0
 
   ## Specify a imagePullPolicy
