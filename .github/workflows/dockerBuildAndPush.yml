@@ -39,15 +39,15 @@ jobs:
    #       path: /resources/k8s/deployments/confluent-platform/connect-worker.properties
    #       shell: bash
 
-      - name: edit worker-config
-        run: |
-          echo "config.providers.azure.param.azure.client.id=$CLIENT_ID" >> connect-worker.properties
-          echo "config.providers.azure.param.azure.tenant.id=$TENANT_ID" >> connect-worker.properties
-          echo "config.providers.azure.param.azure.secret.id=$SECRET_ID" >> connect-worker.properties
-        env:
-          CLIENT_ID: ${{secrets.TC_SHOWCASE_ARM_CLIENT_ID}}
-          TENANT_ID: ${{secrets.TC_SHOWCASE_ARM_TENANT_ID}}
-          SECRET_ID: ${{secrets.TC_SHOWCASE_ARM_CLIENT_SECRET}}
+      #- name: edit worker-config
+      #  run: |
+      #    echo "config.providers.azure.param.azure.client.id=$CLIENT_ID" >> connect-worker.properties
+      #    echo "config.providers.azure.param.azure.tenant.id=$TENANT_ID" >> connect-worker.properties
+      #    echo "config.providers.azure.param.azure.secret.id=$SECRET_ID" >> connect-worker.properties
+      #  env:
+      #    CLIENT_ID: ${{secrets.TC_SHOWCASE_ARM_CLIENT_ID}}
+      #    TENANT_ID: ${{secrets.TC_SHOWCASE_ARM_TENANT_ID}}
+      #    SECRET_ID: ${{secrets.TC_SHOWCASE_ARM_CLIENT_SECRET}}
 
       - name: Build and push Connector image
         uses: docker/build-push-action@v1
@@ -105,8 +105,8 @@ jobs:
                   --namespace "${STAGE}" \
                   --install \
                   --values ./deployments/confluent-platform/connect.values.yaml \
-                  --set kafka-connect.image="confluentinc/cp-kafka-connect" \
-                  --set kafka-connect.imageTag="5.5.0" \
+                  --set kafka-connect.image="novatec/technologyconsulting-showcase-integrationdomain" \
+                  --set kafka-connect.imageTag="latest" \
                   --values ./deployments/confluent-platform/kafka.values.yaml \
                   --values ./deployments/confluent-platform/ksql.values.yaml \
                   --values ./deployments/confluent-platform/rest.values.yaml \
@@ -117,4 +117,3 @@ jobs:
                   --set app.azureconfig.resourcegroup="${AKSRESOURCEGROUP}" \
                   --set app.azureconfig.loadbalancerip="${INTEGRATIONDOMAINIP}"
 
-#novatec/technologyconsulting-showcase-integrationdomain
