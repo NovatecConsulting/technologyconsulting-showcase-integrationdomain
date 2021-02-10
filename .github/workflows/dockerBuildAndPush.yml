@@ -108,8 +108,6 @@ jobs:
                   --set kafka-connect.image="novatec/technologyconsulting-showcase-integrationdomain" \
                   --set kafka-connect.imageTag="latest" \
                   --values ./deployments/confluent-platform/kafka.values.yaml \
-#                  --values ./deployments/confluent-platform/ksql.values.yaml \
-#                  --values ./deployments/confluent-platform/rest.values.yaml \
                   --values ./deployments/confluent-platform/sr.values.yaml \
                   --values ./deployments/confluent-platform/zookeeper.values.yaml \
                   --set app.networking.ingressfqdn="${INGRESSFQDN}" \
