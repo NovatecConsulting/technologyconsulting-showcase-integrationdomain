@@ -34,6 +34,13 @@ kafka-connect:
     "config.storage.replication.factor": "1"
     "offset.storage.replication.factor": "1"
     "status.storage.replication.factor": "1"
+    "config.providers": "azure"
+    "config.providers.azure.class": "io.lenses.connect.secrets.providers.AzureSecretProvider"
+    "config.providers.azure.param.azure.auth.method":"credentials"
+    "config.providers.azure.param.azure.client.id":
+    "config.providers.azure.param.azure.secret.id":
+    "config.providers.azure.param.azure.tenant.id":
+    "config.providers.azure.param.file.dir": "/connector-files/azure"
 
   ## Kafka Connect JVM Heap Option
   heapOptions: "-Xms512M -Xmx512M"
