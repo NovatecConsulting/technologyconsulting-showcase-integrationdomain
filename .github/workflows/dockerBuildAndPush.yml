@@ -107,9 +107,9 @@ jobs:
                   --values ./deployments/confluent-platform/connect.values.yaml \
                   --set kafka-connect.image="confluentinc/cp-kafka-connect" \
                   --set kafka-connect.imageTag="5.5.0" \
-                  --set kafka-connect.configurationOverrides.config.providers.azure.param.azure.client.id='\\\"${ARM_CLIENT_ID}\\\"'
-                  --set kafka-connect.configurationOverrides.config.providers.azure.param.azure.secret.id='\\\"${ARM_CLIENT_SECRET}\\\"'
-                  --set kafka-connect.configurationOverrides.config.providers.azure.param.azure.tenant.id='\\\"${ARM_TENANT_ID}\\\"'
+                  --set kafka-connect.configurationOverrides.config.providers.azure.param.azure.client.id='\\\"${ARM_CLIENT_ID}\\\"' \
+                  --set kafka-connect.configurationOverrides.config.providers.azure.param.azure.secret.id='\\\"${ARM_CLIENT_SECRET}\\\"' \
+                  --set kafka-connect.configurationOverrides.config.providers.azure.param.azure.tenant.id='\\\"${ARM_TENANT_ID}\\\"' \
                   --values ./deployments/confluent-platform/kafka.values.yaml \
                   --values ./deployments/confluent-platform/sr.values.yaml \
                   --values ./deployments/confluent-platform/zookeeper.values.yaml \
