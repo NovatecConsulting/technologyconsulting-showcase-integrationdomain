@@ -42,7 +42,7 @@ jobs:
           dockerfile: ./resources/k8s/deployments/confluent-platform/Dockerfile.connect
           build_args: |
             CONNECTORS=confluentinc/kafka-connect-jdbc:5.5.0
-          repository: novatec/technologyconsulting-showcase-integrationdomain
+          repository: novatec/tc-integrationdomain-kafka-connect
           tags: latest, ${{ env.SHORT_SHA }}
           tag_with_sha: true
 
@@ -52,7 +52,7 @@ jobs:
           username: ${{ secrets.TC_SHOWCASE_DOCKERHUB_USER }}
           password: ${{ secrets.TC_SHOWCASE_DOCKERHUB_PASSWORD }}
           dockerfile: ./resources/k8s/deployments/deploy/Dockerfile.deploy
-          repository: novatec/technologyconsulting-showcase-integrationdomain
+          repository: novatec/tc-integrationdomain-connector-deploy
           tags: latest, ${{ env.SHORT_SHA }}
           tag_with_sha: true
 
@@ -91,7 +91,7 @@ jobs:
                   --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.client\.id=${ARM_CLIENT_ID}" \
                   --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.secret\.id=${ARM_CLIENT_SECRET}" \
                   --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.tenant\.id=${ARM_TENANT_ID}" \
-                  --set kafka-connect.image="novatec/technologyconsulting-showcase-integrationdomain" \
+                  --set kafka-connect.image="novatec/tc-integrationdomain-kafka-connect" \
                   --set kafka-connect.imageTag="latest" \
                   --values ./deployments/confluent-platform/kafka.values.yaml \
                   --values ./deployments/confluent-platform/sr.values.yaml \
