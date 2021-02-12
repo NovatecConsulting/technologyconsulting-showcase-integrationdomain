@@ -1,5 +1,5 @@
 # Tools required for deployment of app (Topics, Connectors and Ksql)
-ARG CPVERSION=""
+ARG CPVERSION
 FROM confluentinc/cp-server${CPVERSION}
 
 USER root
