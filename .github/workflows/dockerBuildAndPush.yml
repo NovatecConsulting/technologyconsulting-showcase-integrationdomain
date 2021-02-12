@@ -40,7 +40,7 @@ jobs:
           username: ${{ secrets.TC_SHOWCASE_DOCKERHUB_USER }}
           password: ${{ secrets.TC_SHOWCASE_DOCKERHUB_PASSWORD }}
           dockerfile: ./resources/k8s/deployments/confluent-platform/Dockerfile.connect
-          build-args: |
+          build_args: |
             CONNECTORS=confluentinc/kafka-connect-jdbc:5.5.0
           repository: novatec/technologyconsulting-showcase-integrationdomain
           tags: latest, ${{ env.SHORT_SHA }}
@@ -52,7 +52,7 @@ jobs:
           username: ${{ secrets.TC_SHOWCASE_DOCKERHUB_USER }}
           password: ${{ secrets.TC_SHOWCASE_DOCKERHUB_PASSWORD }}
           dockerfile: ./resources/k8s/deployments/deploy/Dockerfile.deploy
-          build-args: |
+          build_args: |
             CPVERSION="5.5.0"
           repository: novatec/technologyconsulting-showcase-integrationdomain
           tags: latest, ${{ env.SHORT_SHA }}
