@@ -1,10 +1,7 @@
 # Tools required for deployment of app (Topics, Connectors and Ksql)
 FROM confluentinc/cp-server:5.5.0
 
-USER root
-RUN dnf install -y findutils && dnf clean all
-
-RUN curl  -S -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -o /usr/local/bin/jq && chmod +x /usr/local/bin/jq
+RUN curl -S -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -o /usr/local/bin/jq && chmod +x /usr/local/bin/jq
 
 USER appuser
 
