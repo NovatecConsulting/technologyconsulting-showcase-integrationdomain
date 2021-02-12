@@ -88,9 +88,9 @@ jobs:
                   --namespace "${STAGE}" \
                   --install \
                   --values ./deployments/confluent-platform/connect.values.yaml \
-                  --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.client\.id=${ARM_CLIENT_ID}" \
-                  --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.secret\.id=${ARM_CLIENT_SECRET}" \
-                  --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.tenant\.id=${ARM_TENANT_ID}" \
+                  #--set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.client\.id=${ARM_CLIENT_ID}" \
+                  #--set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.secret\.id=${ARM_CLIENT_SECRET}" \
+                  #--set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.tenant\.id=${ARM_TENANT_ID}" \
                   --set kafka-connect.image="novatec/tc-integrationdomain-kafka-connect" \
                   --set kafka-connect.imageTag="latest" \
                   --values ./deployments/confluent-platform/kafka.values.yaml \
