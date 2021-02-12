@@ -1,6 +1,6 @@
-FROM confluentinc/cp-kafka-connect:5.5.0
-RUN curl https://github.com/lensesio/secret-provider/releases/download/0.0.1/secret-provider-0.0.1-all.jar --create-dirs -o /usr/share/provider/secret-provider-0.0.1-all.jar
-RUN export CLASSPATH=/usr/share/provider/secret-provider-0.0.1-all.jar
+FROM confluentinc/cp-server-connect-base:5.5.0
+# RUN curl https://github.com/lensesio/secret-provider/releases/download/0.0.1/secret-provider-0.0.1-all.jar --create-dirs -o /usr/share/provider/secret-provider-0.0.1-all.jar
+# RUN export CLASSPATH=/usr/share/provider/secret-provider-0.0.1-all.jar
 ARG CONNECTORS=""
 RUN for c in ${CONNECTORS}; do confluent-hub install --no-prompt $c; done;
 
