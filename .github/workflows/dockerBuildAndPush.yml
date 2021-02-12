@@ -52,8 +52,6 @@ jobs:
           username: ${{ secrets.TC_SHOWCASE_DOCKERHUB_USER }}
           password: ${{ secrets.TC_SHOWCASE_DOCKERHUB_PASSWORD }}
           dockerfile: ./resources/k8s/deployments/deploy/Dockerfile.deploy
-          build_args: |
-            CPVERSION="5.5.0"
           repository: novatec/technologyconsulting-showcase-integrationdomain
           tags: latest, ${{ env.SHORT_SHA }}
           tag_with_sha: true
