@@ -14,7 +14,7 @@ env:
 jobs:
   build_Stage_Docker_Build_Push:
     runs-on: ubuntu-latest
-    name: edit worker-config
+    name: Deploy Confluent-Platform
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -33,6 +33,18 @@ jobs:
 
       - name: Add SHORT_SHA env property with commit short sha
         run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
+      - name: Build and push Connector image
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.TC_SHOWCASE_DOCKERHUB_USER }}
+          password: ${{ secrets.TC_SHOWCASE_DOCKERHUB_PASSWORD }}
+          dockerfile: ./resources/k8s/deployments/confluent-platform/Dockerfile.connect
+          build-args: |
+            CONNECTORS=confluentinc/kafka-connect-jdbc:5.5.0
+          repository: novatec/technologyconsulting-showcase-integrationdomain
+          tags: latest, ${{ env.SHORT_SHA }}
+          tag_with_sha: true
 
       - name: Build and push Deploy images
         uses: docker/build-push-action@v1
@@ -81,8 +93,8 @@ jobs:
                   --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.client\.id=${ARM_CLIENT_ID}" \
                   --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.secret\.id=${ARM_CLIENT_SECRET}" \
                   --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.tenant\.id=${ARM_TENANT_ID}" \
-                  --set kafka-connect.image="confluentinc/cp-kafka-connect" \
-                  --set kafka-connect.imageTag="5.5.0" \
+                  --set kafka-connect.image="novatec/technologyconsulting-showcase-integrationdomain" \
+                  --set kafka-connect.imageTag="latest" \
                   --values ./deployments/confluent-platform/kafka.values.yaml \
                   --values ./deployments/confluent-platform/sr.values.yaml \
                   --values ./deployments/confluent-platform/zookeeper.values.yaml \
