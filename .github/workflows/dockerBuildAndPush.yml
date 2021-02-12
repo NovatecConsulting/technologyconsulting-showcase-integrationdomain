@@ -4,6 +4,7 @@ on:
     branches:
       - master
       - deploy-debezium
+      - ccloud
 env:
   containerimagetag: ${GITHUB_SHA}
   containerregistry: nttcshowcase.azurecr.io
@@ -33,28 +34,6 @@ jobs:
       - name: Add SHORT_SHA env property with commit short sha
         run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
 
-      #- name: edit worker-config
-      #  run: |
-      #    echo "config.providers.azure.param.azure.client.id=$CLIENT_ID" >> connect-worker.properties
-      #    echo "config.providers.azure.param.azure.tenant.id=$TENANT_ID" >> connect-worker.properties
-      #    echo "config.providers.azure.param.azure.secret.id=$SECRET_ID" >> connect-worker.properties
-      #  env:
-      #    CLIENT_ID: ${{secrets.TC_SHOWCASE_ARM_CLIENT_ID}}
-      #    TENANT_ID: ${{secrets.TC_SHOWCASE_ARM_TENANT_ID}}
-      #    SECRET_ID: ${{secrets.TC_SHOWCASE_ARM_CLIENT_SECRET}}
-
-      #- name: Build and push Connector image
-      #  uses: docker/build-push-action@v1
-      #  with:
-      #    username: ${{ secrets.TC_SHOWCASE_DOCKERHUB_USER }}
-      #    password: ${{ secrets.TC_SHOWCASE_DOCKERHUB_PASSWORD }}
-      #    dockerfile: ./resources/k8s/deployments/confluent-platform/Dockerfile.connect
-      #    build-args: |
-      #      CONNECTORS=confluentinc/kafka-connect-jdbc:5.5.0 debezium/debezium-connector-postgresql:1.3.1
-      #    repository: novatec/technologyconsulting-showcase-integrationdomain
-      #    tags: latest, ${{ env.SHORT_SHA }}
-      #    tag_with_sha: true
-
       - name: Build and push Deploy images
         uses: docker/build-push-action@v1
         with:
@@ -66,7 +45,7 @@ jobs:
           repository: novatec/technologyconsulting-showcase-integrationdomain
           tags: latest, ${{ env.SHORT_SHA }}
           tag_with_sha: true
-#     Moved Helm deloy & get kubeconfig temporary to this workflow due to problems with workflow_run
+
       - name: Get Kubeconfig
         env:
           ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
@@ -101,9 +80,6 @@ jobs:
                   --values ./deployments/confluent-platform/connect.values.yaml \
                   --set kafka-connect.image="confluentinc/cp-kafka-connect" \
                   --set kafka-connect.imageTag="5.5.0" \
-                  --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.client\.id=${ARM_CLIENT_ID}" \
-                  --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.secret\.id=${ARM_CLIENT_SECRET}" \
-                  --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.tenant\.id=${ARM_TENANT_ID}" \
                   --values ./deployments/confluent-platform/kafka.values.yaml \
                   --values ./deployments/confluent-platform/sr.values.yaml \
                   --values ./deployments/confluent-platform/zookeeper.values.yaml \
@@ -111,7 +87,3 @@ jobs:
                   --set app.image.tag="${IMAGETAG}" \
                   --set app.azureconfig.resourcegroup="${AKSRESOURCEGROUP}" \
                   --set app.azureconfig.loadbalancerip="${INTEGRATIONDOMAINIP}"
-
- # --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.client\.id='\\\"${ARM_CLIENT_ID}\\\"'" \
- # --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.secret\.id='\\\"${ARM_CLIENT_SECRET}\\\"'" \
- # --set "kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.tenant\.id='\\\"${ARM_TENANT_ID}\\\"'" \
