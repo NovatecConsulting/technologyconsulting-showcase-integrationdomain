@@ -1,7 +1,7 @@
 FROM confluentinc/cp-server-connect-base:5.5.0
 RUN mkdir -p /usr/share/java/secret-provider
-RUN curl https://github.com/lensesio/secret-provider/releases/download/0.0.1/secret-provider-0.0.1-all.jar -o /usr/share/java/secret-provider/secret-provider-0.0.1-all.jar
-ENV CLASSPATH="${CLASSPATH}:/usr/share/java/secret-provider/*"
+RUN curl https://github.com/lensesio/secret-provider/releases/download/2.1.5/secret-provider-2.1.5-all.jar -o /usr/share/java/secret-provider/secret-provider-2.1.5-all.jar
+ENV CLASSPATH="/usr/share/java/secret-provider/*"
 ARG CONNECTORS=""
 RUN for c in ${CONNECTORS}; do confluent-hub install --no-prompt $c; done;
 
