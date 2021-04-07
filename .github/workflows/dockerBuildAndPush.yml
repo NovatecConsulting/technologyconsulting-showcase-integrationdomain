@@ -69,7 +69,7 @@ jobs:
           chmod +x ./getKubeconfig.sh
           ./getKubeconfig.sh
 
-      - name: Deploy via Helm
+      - name: Deploy Confluent Platform via Helm
         env:
           ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
@@ -100,3 +100,23 @@ jobs:
                   --set app.image.tag="${IMAGETAG}" \
                   --set app.azureconfig.resourcegroup="${AKSRESOURCEGROUP}" \
                   --set app.azureconfig.loadbalancerip="${INTEGRATIONDOMAINIP}"
+
+      #- name: Deploy Connector Config via Helm
+      #  env:
+      #    ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
+      #    ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
+      #    ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
+      #    ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
+      #    AKSRESOURCEGROUP: 'tc-showcase-test'
+      #    AKSNAME: 'k8s-tc-showcase-test'
+      #    IMAGETAG: ${{ env.SHORT_SHA }}
+      #    STAGE: 'dev'
+      #  run: |
+      #    docker run \
+      #      -v "$(pwd)/resources/k8s":/apps \
+      #      -v "$(pwd)/resources/pipelines/helperscripts/kubeconfig":/root/.kube \
+      #      alpine/helm \
+      #          upgrade connect-config ./deployments/deploy/connector-deploy \
+      #            --namespace "${STAGE}" \
+      #            --install \
+      #            --set image="novatec/tc-integrationdomain-connector-deploy:${{ env.SHORT_SHA }}"
