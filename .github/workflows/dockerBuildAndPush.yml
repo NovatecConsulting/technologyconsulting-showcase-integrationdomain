@@ -39,7 +39,7 @@ jobs:
         with:
           username: ${{ secrets.TC_SHOWCASE_DOCKERHUB_USER }}
           password: ${{ secrets.TC_SHOWCASE_DOCKERHUB_PASSWORD }}
-          dockerfile: ./resources/k8s/deployments/confluent-platform/Dockerfile.connect
+          dockerfile: ./resources/k8s/deployments/confluent-platform/kafka-connect/Dockerfile.connect
           build_args: |
             CONNECTORS=confluentinc/kafka-connect-jdbc:5.5.0
           repository: novatec/tc-integrationdomain-kafka-connect
