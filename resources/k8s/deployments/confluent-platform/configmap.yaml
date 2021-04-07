@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: files
-data:
-  ensure: {{ (.Files.Get "files/ensure") .| quote }}

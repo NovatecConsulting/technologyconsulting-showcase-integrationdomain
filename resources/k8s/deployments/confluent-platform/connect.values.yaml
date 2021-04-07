@@ -95,8 +95,7 @@ kafka-connect:
     #  memory: 128Mi
 
   ## Custom pod annotations
-  podAnnotations:
-    checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+  podAnnotations: {}
 
   ## Node labels for pod assignment
   ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
@@ -140,20 +139,16 @@ kafka-connect:
 
   ## List of volumeMounts for connect server container
   ## ref: https://kubernetes.io/docs/concepts/storage/volumes/
-  volumeMounts:
-   - name: files
-     mountPath: /etc/confluent/docker/ensure
-     subPath: ensure
+  #volumeMounts:
+  # - name: files
+  #  mountPath: /etc/confluent/docker/ensure
+  #   subPath: ensure
 
   ## List of volumeMounts for connect server container
   ## ref: https://kubernetes.io/docs/concepts/storage/volumes/
-  volumes:
-    - name: conf
-      configMap:
-        name: files
-        items:
-          - key: ensure
-            path: ensure
+  #volumes:
+  #  - name: conf
+
 
   ## Secret with multiple keys to serve the purpose of multiple secrets
   ## Values for all the keys will be base64 encoded when the Secret is created or updated
