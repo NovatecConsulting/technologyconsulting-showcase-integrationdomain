@@ -6,7 +6,7 @@ ENV CUB_CLASSPATH="/etc/confluent/docker/docker-utils.jar:/usr/share/java/secret
 ARG CONNECTORS=""
 RUN for c in ${CONNECTORS}; do confluent-hub install --no-prompt $c; done;
 
-COPY include/etc/confluent/docker /etc/confluent/docker
+COPY /github/workspace/resources/k8s/deployments/confluent-platform/kafka-connect/include/etc/confluent/docker/ensure /etc/confluent/docker/ensure
 
 
 
