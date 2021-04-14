@@ -1,8 +1,6 @@
 FROM confluentinc/cp-kafka-connect-base:6.1.1
-RUN mkdir -p /usr/share/java/secret-provider
-RUN curl https://github.com/lensesio/secret-provider/releases/download/2.1.6/secret-provider-2.1.6-all.jar -o /usr/share/java/secret-provider/secret-provider-2.1.6-all.jar
-ENV CLASSPATH="/usr/share/java/secret-provider/secret-provider-2.1.6-all.jar"
-ENV CUB_CLASSPATH="/etc/confluent/docker/docker-utils.jar:/usr/share/java/secret-provider/secret-provider-2.1.6-all.jar"
+RUN curl https://github.com/lensesio/secret-provider/releases/download/2.1.6/secret-provider-2.1.6-all.jar -o /usr/share/java/kafka/secret-provider-2.1.6-all.jar
+ENV CUB_CLASSPATH="/etc/confluent/docker/docker-utils.jar:/usr/share/java/kafka/secret-provider-2.1.6-all.jar"
 ARG CONNECTORS=""
 
 COPY /resources/k8s/deployments/confluent-platform/kafka-connect/include/etc/confluent/docker/ensure /etc/confluent/docker/
