@@ -51,7 +51,6 @@ kafka-connect:
     "producer.retry.backoff.ms": "500"
     "producer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username='7RXI2RV7OJJ5F4EO' password='pxBOsJaZ1U1rMmDvp9vwZsRUByV1GSF7Ox+sJsDdmCOwmhnBEzNFBspy6SeIJ81q';"
     "producer.security.protocol": "SASL_SSL"
-    "plugin.path": ""
     "key.converter": "org.apache.kafka.connect.json.JsonConverter"
     "value.converter": "org.apache.kafka.connect.json.JsonConverter"
     "key.converter.schemas.enable": "false"
