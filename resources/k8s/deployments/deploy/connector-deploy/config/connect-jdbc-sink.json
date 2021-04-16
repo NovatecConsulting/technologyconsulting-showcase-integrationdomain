@@ -6,7 +6,7 @@
         "topics": "tc_showcase_sink",
         "connection.url": "jdbc:postgresql://tc-showcase-test-psql.postgres.database.azure.com:5432/orderdomain_db",
         "connection.user": "${azure:vault-tc-showcase-test.vault.azure.net:database-user}",
-        "connection.password": "${azure:vault-tc-showcase-test.vault.azure.net:database-user}",
+        "connection.password": "${azure:vault-tc-showcase-test.vault.azure.net:database-password}",
         "auto.create": "true",
         "value.converter": "io.confluent.connect.avro.AvroConverter",
         "value.converter.schema.registry.url": "http://schema-registry:8081",

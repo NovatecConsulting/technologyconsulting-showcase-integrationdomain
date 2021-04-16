@@ -5,7 +5,7 @@
     "tasks.max": "1",
     "connection.url": "jdbc:postgresql://tc-showcase-test-psql.postgres.database.azure.com:5432/orderdomain_db",
     "connection.user": "${azure:vault-tc-showcase-test.vault.azure.net:database-user}",
-    "connection.password": "${azure:vault-tc-showcase-test.vault.azure.net:database-user}",
+    "connection.password": "${azure:vault-tc-showcase-test.vault.azure.net:database-password}",
     "mode": "incrementing",
     "incrementing.column.name": "version",
     "topic.prefix": "tc_showcase_source"
