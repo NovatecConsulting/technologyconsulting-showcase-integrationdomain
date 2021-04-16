@@ -1,25 +1,25 @@
 dependencies:
-- name: kafka
+- name: cp-kafka
   version: 0.1.0
-  repository: file://./charts/kafka
-  condition: kafka.enabled
-- name: zookeeper
+  repository: file://./charts/cp-kafka
+  condition: cp-kafka.enabled
+- name: cp-zookeeper
   version: 0.1.0
-  repository: file://./charts/zookeeper
-  condition: zookeeper.enabled
-- name: schema-registry
+  repository: file://./charts/cp-zookeeper
+  condition: cp-zookeeper.enabled
+- name: cp-schema-registry
   version: 0.1.0
-  repository: file://./charts/schema-registry
-  condition: schema-registry.enabled
-- name: kafka-rest
+  repository: file://./charts/cp-schema-registry
+  condition: cp-schema-registry.enabled
+- name: cp-kafka-rest
   version: 0.1.0
-  repository: file://./charts/kafka-rest
-  condition: kafka-rest.enabled
-- name: kafka-connect
+  repository: file://./charts/cp-kafka-rest
+  condition: cp-kafka-rest.enabled
+- name: cp-kafka-connect
   version: 0.1.0
-  repository: file://./charts/kafka-connect
-  condition: kafka-connect.enabled
-- name: ksql-server
+  repository: file://./charts/cp-kafka-connect
+  condition: cp-kafka-connect.enabled
+- name: cp-ksql-server
   version: 0.1.0
-  repository: file://./charts/ksql-server
-  condition: ksql-server.enabled
+  repository: file://./charts/cp-ksql-server
+  condition: cp-ksql-server.enabled

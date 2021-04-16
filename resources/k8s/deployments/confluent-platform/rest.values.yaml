@@ -1,4 +1,4 @@
-kafka-rest:
+cp-kafka-rest:
   # Default values for cp-kafka-rest.
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.

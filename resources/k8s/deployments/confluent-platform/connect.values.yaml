@@ -1,23 +1,13 @@
-kafka-connect:
+cp-kafka-connect:
   # Default values for kafka-connect.
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
 
   replicaCount: 1
 
-  ## Image Info
-  ## ref: https://hub.docker.com/r/confluentinc/cp-kafka/
-  image:
-  imageTag:
-
   ## Specify a imagePullPolicy
   ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
   imagePullPolicy: IfNotPresent
-
-  ## Specify an array of imagePullSecrets.
-  ## Secrets must be manually created in the namespace.
-  ## ref: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-  imagePullSecrets:
 
   servicePort: 8083
 
