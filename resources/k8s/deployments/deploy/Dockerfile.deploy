@@ -1,5 +1,9 @@
 # Tools required for deployment of app (Topics, Connectors and Ksql)
 FROM confluentinc/cp-kafka-connect-base:6.1.1
 
+USER root
+
 RUN curl -S -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -o /usr/local/bin/jq && chmod +x /usr/local/bin/jq
+
+USER appuser
 
