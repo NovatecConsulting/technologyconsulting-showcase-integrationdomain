@@ -1,4 +1,4 @@
-zookeeper:
+cp-zookeeper:
   ## Default values for cp-zookeeper.
   ## This is a YAML-formatted file.
   ## Declare variables to be passed into your templates.

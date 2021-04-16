@@ -1,4 +1,4 @@
-kafka:
+cp-kafka:
   # Default values for cp-kafka.
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
