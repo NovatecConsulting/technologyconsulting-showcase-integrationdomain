@@ -1,10 +1,13 @@
-FROM confluentinc/cp-kafka-connect-base:5.5.0
+FROM confluentinc/cp-kafka-connect-base:6.1.1
+
+ENV PLUGINS_DIR=/usr/share/confluent-hub-components
+ENV CONNECT_PLUGIN_PATH=/usr/share/java,/usr/share/confluent-hub-components/
 
 USER root
 
-RUN chmod 777 -R /usr/share/java/kafka
-RUN curl https://github.com/lensesio/secret-provider/releases/download/2.1.6/secret-provider-2.1.6-all.jar -o /usr/share/java/kafka/secret-provider-2.1.6-all.jar
-ENV CUB_CLASSPATH="/etc/confluent/docker/docker-utils.jar:/usr/share/java/kafka/secret-provider-2.1.6-all.jar"
+mkdir -p $${PLUGINS_DIR}/secret-provider \
+        && wget -qP $${PLUGINS_DIR}/secret-provider https://github.com/lensesio/secret-provider/releases/download/2.1.6/secret-provider-2.1.6-all.jar
+
 ARG CONNECTORS=""
 
 COPY /resources/k8s/deployments/confluent-platform/kafka-connect/include/etc/confluent/docker/ensure /etc/confluent/docker/
