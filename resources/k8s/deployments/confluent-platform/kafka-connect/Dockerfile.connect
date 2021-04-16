@@ -5,7 +5,7 @@ ENV CONNECT_PLUGIN_PATH=/usr/share/java,/usr/share/confluent-hub-components/
 
 USER root
 
-mkdir -p $${PLUGINS_DIR}/secret-provider \
+RUN mkdir -p $${PLUGINS_DIR}/secret-provider \
         && wget -qP $${PLUGINS_DIR}/secret-provider https://github.com/lensesio/secret-provider/releases/download/2.1.6/secret-provider-2.1.6-all.jar
 
 ARG CONNECTORS=""
