@@ -75,3 +75,21 @@ You will see a list of ports for minikube. Look for a port-pair containing 5000.
 The other port-value should be the same as in the files "build-connect-image.sh", "build-deploy-image.sh" and as in the functions "buildDeployImage" and 
 "buildConnectImage" in the setup.sh script.
 
+
+
+```
+ALTER TABLE o_customer
+ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+BEGIN; 
+CREATE OR REPLACE FUNCTION update_timestamp() 
+RETURNS TRIGGER AS $$ 
+BEGIN 
+  NEW.updated_at = now();
+  RETURN NEW; 
+END;
+$$ language 'plpgsql';
+COMMIT;
+CREATE TRIGGER update_ab_changetimestamp BEFORE UPDATE ON o_customer FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+```
+
