@@ -14,6 +14,6 @@
     "dialect.name": "PostgreSqlDatabaseDialect",
     "transforms": "createkey",
     "transforms.createkey.type": "org.apache.kafka.connect.transforms.ValueToKey",
-    "transforms.createkey.field": "c_id"
+    "transforms.createkey.fields": "c_id"
   }
 }
