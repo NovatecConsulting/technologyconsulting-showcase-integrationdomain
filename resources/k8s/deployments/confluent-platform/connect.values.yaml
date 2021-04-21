@@ -100,7 +100,7 @@ cp-kafka-connect:
   ## Kafka Connect JMX Settings
   ## ref: https://kafka.apache.org/documentation/#connect_monitoring
   jmx:
-    port: 5555
+    port: 5558
 
   ## Prometheus Exporter Configuration
   ## ref: https://prometheus.io/docs/instrumenting/exporters/
