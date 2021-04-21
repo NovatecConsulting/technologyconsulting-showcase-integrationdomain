@@ -70,7 +70,7 @@ cp-schema-registry:
   ## Schema Registry JMX Settings
   ## ref: https://docs.confluent.io/current/schema-registry/docs/monitoring.html
   jmx:
-    port: 5555
+    port: 5558
 
   ## Prometheus Exporter Configuration
   ## ref: https://prometheus.io/docs/instrumenting/exporters/
