@@ -8,11 +8,12 @@ USER root
 RUN mkdir -p ${PLUGINS_DIR}/secret-provider \
         && wget -qP ${PLUGINS_DIR}/secret-provider https://github.com/lensesio/secret-provider/releases/download/2.1.6/secret-provider-2.1.6-all.jar
 ENV CLASSPATH=${PLUGINS_DIR}/secret-provider/*
+ENV CUB_CLASSPATH='"${PLUGINS_DIR}/secret-provider/*"'
 
 ARG CONNECTORS="confluentinc/kafka-connect-jdbc:10.0.1"
 RUN for c in ${CONNECTORS}; do confluent-hub install --no-prompt $c; done;
 
-COPY /resources/k8s/deployments/confluent-platform/kafka-connect/include/etc/confluent/docker/ensure /etc/confluent/docker/
+# COPY /resources/k8s/deployments/confluent-platform/kafka-connect/include/etc/confluent/docker/ensure /etc/confluent/docker/
 
 
 
