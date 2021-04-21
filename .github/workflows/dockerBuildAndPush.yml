@@ -93,7 +93,7 @@ jobs:
           chmod +x ./getKubeconfig.sh
           ./getKubeconfig.sh
 
-      - name: Deploy Confluent Platform via Helm
+      - name: Uninstall old releases
         env:
           ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
