@@ -75,7 +75,7 @@ You will see a list of ports for minikube. Look for a port-pair containing 5000.
 The other port-value should be the same as in the files "build-connect-image.sh", "build-deploy-image.sh" and as in the functions "buildDeployImage" and 
 "buildConnectImage" in the setup.sh script.
 
-
+--
 
 ```
 ALTER TABLE o_customer
