@@ -13,7 +13,7 @@ ENV CUB_CLASSPATH='"${PLUGINS_DIR}/secret-provider/*"'
 ARG CONNECTORS="confluentinc/kafka-connect-jdbc:10.0.1"
 RUN for c in ${CONNECTORS}; do confluent-hub install --no-prompt $c; done;
 
-# COPY /resources/k8s/deployments/confluent-platform/kafka-connect/include/etc/confluent/docker/ensure /etc/confluent/docker/
+COPY /resources/k8s/deployments/confluent-platform/kafka-connect/include/etc/confluent/docker/ensure /etc/confluent/docker/
 
 
 
