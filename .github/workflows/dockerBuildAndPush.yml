@@ -34,6 +34,30 @@ jobs:
       - name: Add SHORT_SHA env property with commit short sha
         run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
 
+      - name: Deploy Confluent Platform via Helm
+          env:
+            ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
+            ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
+            ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
+            ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
+            AKSRESOURCEGROUP: 'tc-showcase-test'
+            AKSNAME: 'k8s-tc-showcase-test'
+            IMAGETAG: ${{ env.SHORT_SHA }}
+            STAGE: 'dev'
+          run: |
+            docker run \
+              -v "$(pwd)/resources/k8s":/apps \
+              -v "$(pwd)/resources/pipelines/helperscripts/kubeconfig":/root/.kube \
+              alpine/helm \
+                  uninstall confluent-platform \
+                  --namespace "${STAGE}"
+            docker run \
+              -v "$(pwd)/resources/k8s":/apps \
+              -v "$(pwd)/resources/pipelines/helperscripts/kubeconfig":/root/.kube \
+              alpine/helm \
+                  uninstall connect-config \
+                  --namespace "${STAGE}"
+
       - name: Build and push Connector image
         uses: docker/build-push-action@v1
         with:
@@ -96,10 +120,7 @@ jobs:
                   --values ./deployments/confluent-platform/kafka.values.yaml \
                   --values ./deployments/confluent-platform/sr.values.yaml \
                   --values ./deployments/confluent-platform/zookeeper.values.yaml \
-                  --set app.networking.ingressfqdn="${INGRESSFQDN}" \
-                  --set app.image.tag="${IMAGETAG}" \
-                  --set app.azureconfig.resourcegroup="${AKSRESOURCEGROUP}" \
-                  --set app.azureconfig.loadbalancerip="${INTEGRATIONDOMAINIP}"
+                  --values ./deployments/confluent-platform/ksql.values.yaml
 
       - name: Deploy Connector Config via Helm
         env:
