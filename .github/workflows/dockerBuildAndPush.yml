@@ -120,8 +120,7 @@ jobs:
                   --set cp-kafka-connect.imageTag=${{ env.SHORT_SHA }} \
                   --values ./deployments/confluent-platform/kafka.values.yaml \
                   --values ./deployments/confluent-platform/sr.values.yaml \
-                  --values ./deployments/confluent-platform/zookeeper.values.yaml \
-                  --values ./deployments/confluent-platform/ksql.values.yaml
+                  --values ./deployments/confluent-platform/zookeeper.values.yaml
 
       - name: Deploy Connector Config via Helm
         env:
