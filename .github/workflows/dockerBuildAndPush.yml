@@ -34,6 +34,19 @@ jobs:
       - name: Add SHORT_SHA env property with commit short sha
         run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
 
+      - name: Get Kubeconfig
+        env:
+          ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
+          AKSRESOURCEGROUP: 'tc-showcase-test'
+          AKSNAME: 'k8s-tc-showcase-test'
+        working-directory: ./resources/pipelines/helperscripts
+        run: |
+          chmod +x ./getKubeconfig.sh
+          ./getKubeconfig.sh
+
       - name: Uninstall old releases
         env:
           ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
@@ -79,19 +92,6 @@ jobs:
           repository: novatec/tc-integrationdomain-connector-deploy
           tags: latest, ${{ env.SHORT_SHA }}
           tag_with_sha: true
-
-      - name: Get Kubeconfig
-        env:
-          ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
-          AKSRESOURCEGROUP: 'tc-showcase-test'
-          AKSNAME: 'k8s-tc-showcase-test'
-        working-directory: ./resources/pipelines/helperscripts
-        run: |
-          chmod +x ./getKubeconfig.sh
-          ./getKubeconfig.sh
 
       - name: Deploy Confluent Platform via Helm
         env:
