@@ -48,6 +48,7 @@ jobs:
           ./getKubeconfig.sh
 
       - name: Uninstall old releases
+        continue_on_error: true
         env:
           ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
@@ -69,8 +70,7 @@ jobs:
             -v "$(pwd)/resources/pipelines/helperscripts/kubeconfig":/root/.kube \
             alpine/helm \
                 uninstall connect-config \
-                --namespace "${STAGE}" \
-                || exit_code=$?
+                --namespace "${STAGE}"
 
       - name: Build and push Connector image
         uses: docker/build-push-action@v1
