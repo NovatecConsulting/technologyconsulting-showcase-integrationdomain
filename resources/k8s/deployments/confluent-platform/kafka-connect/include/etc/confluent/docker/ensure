@@ -16,17 +16,20 @@
 
 . /etc/confluent/docker/bash-config
 
-. /etc/confluent/docker/mesos-setup.sh
-. /etc/confluent/docker/apply-mesos-overrides
+echo "===> Check if Kafka is healthy ..."
 
-echo "===> User"
-id
+if [[ -n "${CONNECT_SECURITY_PROTOCOL-}" ]] && [[ $CONNECT_SECURITY_PROTOCOL != "PLAINTEXT" ]]
+then
 
-echo "===> Configuring ..."
-/etc/confluent/docker/configure
+    cub kafka-ready \
+        "${CONNECT_CUB_KAFKA_MIN_BROKERS:-1}" \
+        "${CONNECT_CUB_KAFKA_TIMEOUT:-40}" \
+        -b "$CONNECT_BOOTSTRAP_SERVERS" \
+        --config /etc/"${COMPONENT}"/kafka-connect.properties
+else
 
-echo "===> Running preflight checks ... "
-/etc/confluent/docker/ensure
-
-echo "===> Launching ... "
-exec /etc/confluent/docker/launch
+    cub kafka-ready \
+        "${CONNECT_CUB_KAFKA_MIN_BROKERS:-1}" \
+        "${CONNECT_CUB_KAFKA_TIMEOUT:-40}" \
+        -b "$CONNECT_BOOTSTRAP_SERVERS"
+fi
