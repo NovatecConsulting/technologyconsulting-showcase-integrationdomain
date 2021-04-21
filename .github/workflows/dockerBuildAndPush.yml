@@ -69,7 +69,8 @@ jobs:
             -v "$(pwd)/resources/pipelines/helperscripts/kubeconfig":/root/.kube \
             alpine/helm \
                 uninstall connect-config \
-                --namespace "${STAGE}"
+                --namespace "${STAGE}" \
+                || exit_code=$?
 
       - name: Build and push Connector image
         uses: docker/build-push-action@v1
