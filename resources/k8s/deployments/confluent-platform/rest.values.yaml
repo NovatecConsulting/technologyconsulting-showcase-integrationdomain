@@ -60,7 +60,7 @@ cp-kafka-rest:
   ## Kafka REST JMX Settings
   ## ref: https://docs.confluent.io/current/kafka-rest/docs/monitoring.html
   jmx:
-    port: 5558
+    port: 5555
 
   ## Prometheus Exporter Configuration
   ## ref: https://prometheus.io/docs/instrumenting/exporters/

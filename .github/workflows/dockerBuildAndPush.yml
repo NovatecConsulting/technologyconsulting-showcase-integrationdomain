@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - master
-      - deploy-debezium
       - ccloud
 env:
   containerimagetag: ${GITHUB_SHA}
@@ -34,44 +33,6 @@ jobs:
       - name: Add SHORT_SHA env property with commit short sha
         run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
 
-      - name: Get Kubeconfig
-        env:
-          ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
-          AKSRESOURCEGROUP: 'tc-showcase-test'
-          AKSNAME: 'k8s-tc-showcase-test'
-        working-directory: ./resources/pipelines/helperscripts
-        run: |
-          chmod +x ./getKubeconfig.sh
-          ./getKubeconfig.sh
-
-      - name: Uninstall old releases
-        continue-on-error: true
-        env:
-          ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
-          AKSRESOURCEGROUP: 'tc-showcase-test'
-          AKSNAME: 'k8s-tc-showcase-test'
-          IMAGETAG: ${{ env.SHORT_SHA }}
-          STAGE: 'dev'
-        run: |
-          docker run \
-            -v "$(pwd)/resources/k8s":/apps \
-            -v "$(pwd)/resources/pipelines/helperscripts/kubeconfig":/root/.kube \
-            alpine/helm \
-                uninstall confluent-platform \
-                 --namespace "${STAGE}"
-          docker run \
-            -v "$(pwd)/resources/k8s":/apps \
-            -v "$(pwd)/resources/pipelines/helperscripts/kubeconfig":/root/.kube \
-            alpine/helm \
-                uninstall connect-config \
-                --namespace "${STAGE}"
-
       - name: Build and push Connector image
         uses: docker/build-push-action@v1
         with:
@@ -93,51 +54,3 @@ jobs:
           repository: novatec/tc-integrationdomain-connector-deploy
           tags: latest, ${{ env.SHORT_SHA }}
           tag_with_sha: true
-
-      - name: Deploy Confluent Platform via Helm
-        env:
-          ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
-          AKSRESOURCEGROUP: 'tc-showcase-test'
-          AKSNAME: 'k8s-tc-showcase-test'
-          IMAGETAG: ${{ env.SHORT_SHA }}
-          STAGE: 'dev'
-        run: |
-          docker run \
-            -v "$(pwd)/resources/k8s":/apps \
-            -v "$(pwd)/resources/pipelines/helperscripts/kubeconfig":/root/.kube \
-            alpine/helm \
-                upgrade confluent-platform ./charts/confluent-platform \
-                  --namespace "${STAGE}" \
-                  --install \
-                  --values ./deployments/confluent-platform/connect.values.yaml \
-                  --set "cp-kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.client\.id=${ARM_CLIENT_ID}" \
-                  --set "cp-kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.secret\.id=${ARM_CLIENT_SECRET}" \
-                  --set "cp-kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.tenant\.id=${ARM_TENANT_ID}" \
-                  --set cp-kafka-connect.image="novatec/tc-integrationdomain-kafka-connect" \
-                  --set cp-kafka-connect.imageTag=${{ env.SHORT_SHA }} \
-                  --values ./deployments/confluent-platform/kafka.values.yaml \
-                  --values ./deployments/confluent-platform/sr.values.yaml \
-                  --values ./deployments/confluent-platform/zookeeper.values.yaml
-
-      - name: Deploy Connector Config via Helm
-        env:
-          ARM_CLIENT_ID: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.TC_SHOWCASE_ARM_CLIENT_SECRET }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
-          AKSRESOURCEGROUP: 'tc-showcase-test'
-          AKSNAME: 'k8s-tc-showcase-test'
-          IMAGETAG: ${{ env.SHORT_SHA }}
-          STAGE: 'dev'
-        run: |
-          docker run \
-            -v "$(pwd)/resources/k8s":/apps \
-            -v "$(pwd)/resources/pipelines/helperscripts/kubeconfig":/root/.kube \
-            alpine/helm \
-                upgrade connect-config ./deployments/deploy/connector-deploy \
-                  --namespace "${STAGE}" \
-                  --install \
-                  --set image="novatec/tc-integrationdomain-connector-deploy:${{ env.SHORT_SHA }}"
