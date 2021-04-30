@@ -92,7 +92,7 @@ jobs:
                 upgrade confluent-platform ./charts/confluent-platform \
                   --namespace "${STAGE}" \
                   --install \
-                  --values connect.values.yaml \
+                  --values connect-plaintext.values.yaml \
                   --set "cp-kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.client\.id=${ARM_CLIENT_ID}" \
                   --set "cp-kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.secret\.id=${ARM_CLIENT_SECRET}" \
                   --set "cp-kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.tenant\.id=${ARM_TENANT_ID}" \
