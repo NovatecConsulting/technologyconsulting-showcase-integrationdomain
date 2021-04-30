@@ -11,10 +11,6 @@ dependencies:
   version: 0.1.0
   repository: file://./charts/cp-schema-registry
   condition: cp-schema-registry.enabled
-- name: cp-kafka-rest
-  version: 0.1.0
-  repository: file://./charts/cp-kafka-rest
-  condition: cp-kafka-rest.enabled
 - name: cp-kafka-connect
   version: 0.1.0
   repository: file://./charts/cp-kafka-connect
