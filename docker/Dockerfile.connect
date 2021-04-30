@@ -11,8 +11,6 @@ ENV CONNECT_PLUGIN_PATH=/usr/share/java,/usr/share/confluent-hub-components/
 ENV CLASSPATH=${PLUGINS_DIR}/secret-provider/*
 ENV CUB_CLASSPATH='"/etc/confluent/docker/docker-utils.jar:/usr/share/java/kafka/*:/usr/share/confluent-hub-components/secret-provider/*"'
 
-USER appuser
-
 ARG CONNECTORS="confluentinc/kafka-connect-jdbc:10.0.1"
 RUN for c in ${CONNECTORS}; do confluent-hub install --no-prompt $c; done;
 
