@@ -24,11 +24,14 @@ CONFLUENT_CLOUD_KEY=$(az keyvault secret show --vault-name "vault-tc-showcase-te
 
 CONFLUENT_CLOUD_SECRET=$(az keyvault secret show --vault-name "vault-tc-showcase-test" --name "confluent-cloud-secret" --query value -o tsv)
 
+CONFLUENT_CLOUD_BOOTSTRAP_SERVERS=$(az keyvault secret show --vault-name "vault-tc-showcase-test" --name "confluent-cloud-bootstrap-server" --query value -o tsv)
 # put values to Github's env stage
 # this not a safe solution
 echo "DBUSER=$DBUSER" >> $GITHUB_ENV
 echo "DBPWD=$DBPWD" >> $GITHUB_ENV
 echo "DBFQDN=$DBFQDN" >> $GITHUB_ENV
 echo "INGRESSFQDN=$INGRESSFQDN" >> $GITHUB_ENV
+
+echo "CONFLUENT_CLOUD_BOOTSTRAP_SERVERS=$CONFLUENT_CLOUD_BOOTSTRAP_SERVERS" >> $GITHUB_ENV
 echo "CONFLUENT_CLOUD_KEY=$CONFLUENT_CLOUD_KEY" >> $GITHUB_ENV
 echo "CONFLUENT_CLOUD_SECRET=$CONFLUENT_CLOUD_SECRET" >> $GITHUB_ENV

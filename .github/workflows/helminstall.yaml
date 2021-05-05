@@ -3,11 +3,6 @@ name: helmInstall
 on:
   workflow_dispatch:
 
-  workflow_run:
-    workflows: ["dockerBuildAndPush"]
-    types:
-      - completed
-
 env:
   containerimagetag: ${GITHUB_SHA}
   containerregistry: nttcshowcase.azurecr.io
@@ -15,8 +10,7 @@ env:
   containerregistrysericeconnection: acr-sc
   BOOTSTRAP_SERVERS: "confluent-platform-cp-kafka:9092"
   KAFKA_CONNECT_REST_API: "confluent-platform-cp-kafka-connect:8083"
-  VALUE_CONVERTER_SCHEMA_REGISTRY_URL: "http://confluent-platform-cp-schema-registry:8081"
-  KEY_CONVERTER_SCHEMA_REGISTRY_URL: "http://confluent-platform-cp-schema-registry:8081"
+  SCHEMA_REGISTRY_URL: "http://confluent-platform-cp-schema-registry:8081"
 
 jobs:
   build_Stage_helm_deploy:
@@ -96,15 +90,15 @@ jobs:
                 upgrade confluent-platform ./charts/confluent-platform \
                   --namespace "${STAGE}" \
                   --install \
-                  --values connect-plaintext.values.yaml \
+                  --values connect.values.yaml \
                   --set "cp-kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.client\.id=${ARM_CLIENT_ID}" \
                   --set "cp-kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.secret\.id=${ARM_CLIENT_SECRET}" \
                   --set "cp-kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.tenant\.id=${ARM_TENANT_ID}" \
                   --set cp-kafka-connect.image="novatec/tc-integrationdomain-kafka-connect" \
                   --set cp-kafka-connect.imageTag=${{ env.SHORT_SHA }} \
                   --set "cp-kafka-connect.configurationOverrides.bootstrap\.servers=${BOOTSTRAP_SERVERS}" \
-                  --set "cp-kafka-connect.configurationOverrides.value\.converter\.schema\.registry\.url=${VALUE_CONVERTER_SCHEMA_REGISTRY_URL}" \
-                  --set "cp-kafka-connect.configurationOverrides.key\.converter\.schema\.registry\.url=${KEY_CONVERTER_SCHEMA_REGISTRY_URL}" \
+                  --set "cp-kafka-connect.configurationOverrides.value\.converter\.schema\.registry\.url=${SCHEMA_REGISTRY_URL}" \
+                  --set "cp-kafka-connect.configurationOverrides.key\.converter\.schema\.registry\.url=${SCHEMA_REGISTRY_URL}" \
                   --values kafka.values.yaml \
                   --values sr.values.yaml \
                   --values zookeeper.values.yaml

@@ -3,22 +3,11 @@ name: helmInstall
 on:
   workflow_dispatch:
 
-  workflow_run:
-    workflows: ["dockerBuildAndPush"]
-    types:
-      - completed
-
 env:
   containerimagetag: ${GITHUB_SHA}
   containerregistry: nttcshowcase.azurecr.io
   containerimagerepository: technologyconsulting-showcase-integrationdomain
   containerregistrysericeconnection: acr-sc
-  BOOTSTRAP_SERVERS: ${{ env.CONFLUENT_CLOUD_BOOTSTRAP_SERVER }}
-  CONFLUENT_CLOUD_KEY: ${{ env.CONFLUENT_CLOUD_KEY }}
-  CONFLUENT_CLOUD_SECRET: ${{ env.CONFLUENT_CLOUD_SECRET }}
-  KAFKA_CONNECT_REST_API: "confluent-platform-cp-kafka-connect:8083"
-  VALUE_CONVERTER_SCHEMA_REGISTRY_URL: "http://confluent-platform-cp-schema-registry:8081"
-  KEY_CONVERTER_SCHEMA_REGISTRY_URL: "http://confluent-platform-cp-schema-registry:8081"
 
 jobs:
   build_Stage_helm_deploy:
@@ -90,6 +79,11 @@ jobs:
           AKSNAME: 'k8s-tc-showcase-test'
           IMAGETAG: ${{ env.SHORT_SHA }}
           STAGE: 'dev'
+          BOOTSTRAP_SERVERS: ${{ env.CONFLUENT_CLOUD_BOOTSTRAP_SERVERS }}
+          CONFLUENT_CLOUD_KEY: ${{ env.CONFLUENT_CLOUD_KEY }}
+          CONFLUENT_CLOUD_SECRET: ${{ env.CONFLUENT_CLOUD_SECRET }}
+          KAFKA_CONNECT_REST_API: "confluent-platform-cp-kafka-connect:8083"
+          SCHEMA_REGISTRY_URL: "http://confluent-platform-cp-schema-registry:8081"
         run: |
           docker run \
             -v "$(pwd)":/apps \
@@ -98,15 +92,27 @@ jobs:
                 upgrade confluent-platform ./charts/confluent-platform \
                   --namespace "${STAGE}" \
                   --install \
-                  --values connect-plaintext.values.yaml \
+                  --values connect.values.yaml \
                   --set "cp-kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.client\.id=${ARM_CLIENT_ID}" \
                   --set "cp-kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.secret\.id=${ARM_CLIENT_SECRET}" \
                   --set "cp-kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.tenant\.id=${ARM_TENANT_ID}" \
                   --set cp-kafka-connect.image="novatec/tc-integrationdomain-kafka-connect" \
                   --set cp-kafka-connect.imageTag=${{ env.SHORT_SHA }} \
                   --set "cp-kafka-connect.configurationOverrides.bootstrap\.servers=${BOOTSTRAP_SERVERS}" \
-                  --set "cp-kafka-connect.configurationOverrides.value\.converter\.schema\.registry\.url=${VALUE_CONVERTER_SCHEMA_REGISTRY_URL}" \
-                  --set "cp-kafka-connect.configurationOverrides.key\.converter\.schema\.registry\.url=${KEY_CONVERTER_SCHEMA_REGISTRY_URL}" \
+                  --set "cp-kafka-connect.configurationOverrides.value\.converter\.schema\.registry\.url=${SCHEMA_REGISTRY_URL}" \
+                  --set "cp-kafka-connect.configurationOverrides.key\.converter\.schema\.registry\.url=${SCHEMA_REGISTRY_URL}" \
+                  --set "cp-kafka-connect.configurationOverrides.sasl\.jaas\.config=org.apache.kafka.common.security.plain.PlainLoginModule required username='${CONFLUENT_CLOUD_KEY}' password='${CONFLUENT_CLOUD_SECRET}';" \
+                  --set "cp-kafka-connect.configurationOverrides.consumer\.sasl\.jaas\.config=org.apache.kafka.common.security.plain.PlainLoginModule required username='${CONFLUENT_CLOUD_KEY}' password='${CONFLUENT_CLOUD_SECRET}';" \
+                  --set "cp-kafka-connect.configurationOverrides.producer\.sasl\.jaas\.config=org.apache.kafka.common.security.plain.PlainLoginModule required username='${CONFLUENT_CLOUD_KEY}' password='${CONFLUENT_CLOUD_SECRET}';" \
+                  --set "cp-kafka-connect.configurationOverrides.ssl\.endpoint\.identification\.algorithm=https" \
+                  --set "cp-kafka-connect.configurationOverrides.sasl\.mechanism=PLAIN" \
+                  --set "cp-kafka-connect.configurationOverrides.security\.protocol=SASL_SSL" \
+                  --set "cp-kafka-connect.configurationOverrides.consumer\.ssl\.endpoint\.identification\.algorithm=https" \
+                  --set "cp-kafka-connect.configurationOverrides.consumer\.sasl\.mechanism=PLAIN" \
+                  --set "cp-kafka-connect.configurationOverrides.consumer\.security\.protocol=SASL_SSL" \
+                  --set "cp-kafka-connect.configurationOverrides.producer\.ssl\.endpoint\.identification\.algorithm=https" \
+                  --set "cp-kafka-connect.configurationOverrides.producer\.sasl\.mechanism=PLAIN" \
+                  --set "cp-kafka-connect.configurationOverrides.producer\.security\.protocol=SASL_SSL" \
                   --values kafka.values.yaml \
                   --values sr.values.yaml \
                   --values zookeeper.values.yaml
@@ -121,6 +127,8 @@ jobs:
           AKSNAME: 'k8s-tc-showcase-test'
           IMAGETAG: ${{ env.SHORT_SHA }}
           STAGE: 'dev'
+          BOOTSTRAP_SERVERS: ${{ env.CONFLUENT_CLOUD_BOOTSTRAP_SERVERS }}
+          KAFKA_CONNECT_REST_API: "confluent-platform-cp-kafka-connect:8083"
         run: |
           docker run \
             -v "$(pwd)":/apps \
