@@ -127,6 +127,6 @@ jobs:
                 upgrade connect-config ./charts/connector-deploy \
                   --namespace "${STAGE}" \
                   --install \
-                  --set kafkaConnectRestApi=${KAFKA_CONNECT_REST_API}
-                  --set kafkaBootstrapServer=${BOOTSTRAP_SERVERS}
+                  --set kafkaConnectRestApi=${KAFKA_CONNECT_REST_API} \
+                  --set kafkaBootstrapServer=${BOOTSTRAP_SERVERS} \
                   --set image="novatec/tc-integrationdomain-connector-deploy:${{ env.SHORT_SHA }}"
