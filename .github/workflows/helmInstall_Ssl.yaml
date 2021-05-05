@@ -3,16 +3,22 @@ name: helmInstall
 on:
   workflow_dispatch:
 
-#  workflow_run:
-#    workflows: ["dockerBuildAndPush"]
-#    types:
-#      - completed
+  workflow_run:
+    workflows: ["dockerBuildAndPush"]
+    types:
+      - completed
 
 env:
   containerimagetag: ${GITHUB_SHA}
   containerregistry: nttcshowcase.azurecr.io
   containerimagerepository: technologyconsulting-showcase-integrationdomain
   containerregistrysericeconnection: acr-sc
+  BOOTSTRAP_SERVERS: ${{ env.CONFLUENT_CLOUD_BOOTSTRAP_SERVER }}
+  CONFLUENT_CLOUD_KEY: ${{ env.CONFLUENT_CLOUD_KEY }}
+  CONFLUENT_CLOUD_SECRET: ${{ env.CONFLUENT_CLOUD_SECRET }}
+  KAFKA_CONNECT_REST_API: "confluent-platform-cp-kafka-connect:8083"
+  VALUE_CONVERTER_SCHEMA_REGISTRY_URL: "http://confluent-platform-cp-schema-registry:8081"
+  KEY_CONVERTER_SCHEMA_REGISTRY_URL: "http://confluent-platform-cp-schema-registry:8081"
 
 jobs:
   build_Stage_helm_deploy:
@@ -98,6 +104,9 @@ jobs:
                   --set "cp-kafka-connect.configurationOverrides.config\.providers\.azure\.param\.azure\.tenant\.id=${ARM_TENANT_ID}" \
                   --set cp-kafka-connect.image="novatec/tc-integrationdomain-kafka-connect" \
                   --set cp-kafka-connect.imageTag=${{ env.SHORT_SHA }} \
+                  --set "cp-kafka-connect.configurationOverrides.bootstrap\.servers=${BOOTSTRAP_SERVERS}" \
+                  --set "cp-kafka-connect.configurationOverrides.value\.converter\.schema\.registry\.url=${VALUE_CONVERTER_SCHEMA_REGISTRY_URL}" \
+                  --set "cp-kafka-connect.configurationOverrides.key\.converter\.schema\.registry\.url=${KEY_CONVERTER_SCHEMA_REGISTRY_URL}" \
                   --values kafka.values.yaml \
                   --values sr.values.yaml \
                   --values zookeeper.values.yaml
@@ -120,4 +129,6 @@ jobs:
                 upgrade connect-config ./charts/connector-deploy \
                   --namespace "${STAGE}" \
                   --install \
+                  --set kafkaConnectRestApi=${KAFKA_CONNECT_REST_API} \
+                  --set kafkaBootstrapServer=${BOOTSTRAP_SERVERS} \
                   --set image="novatec/tc-integrationdomain-connector-deploy:${{ env.SHORT_SHA }}"
