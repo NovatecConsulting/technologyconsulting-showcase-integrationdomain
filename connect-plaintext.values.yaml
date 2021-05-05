@@ -14,7 +14,7 @@ cp-kafka-connect:
   ## Kafka Connect properties
   ## ref: https://docs.confluent.io/current/connect/userguide.html#configuring-workers
   configurationOverrides:
-    "bootstrap.servers": "confluent-platform-cp-kafka:9092"
+    "bootstrap.servers":
     "group.id": "connect-cluster"
     "internal.key.converter.schemas.enable": "false"
     "internal.value.converter.schemas.enable": "false"
@@ -31,8 +31,8 @@ cp-kafka-connect:
     "producer.retry.backoff.ms": "500"
     "key.converter": "io.confluent.connect.avro.AvroConverter"
     "value.converter": "io.confluent.connect.avro.AvroConverter"
-    "value.converter.schema.registry.url": "http://confluent-platform-cp-schema-registry:8081"
-    "key.converter.schema.registry.url": "http://confluent-platform-cp-schema-registry:8081"
+    "value.converter.schema.registry.url":
+    "key.converter.schema.registry.url":
     "key.converter.schemas.enable": "true"
     "value.converter.schemas.enable": "true"
     "internal.key.converter": "org.apache.kafka.connect.json.JsonConverter"

@@ -1,3 +1,3 @@
-kafkaBootstrapServer: confluent-platform-cp-kafka:9092
-kafkaConnectRestApi: confluent-platform-cp-kafka-connect:8083
+kafkaBootstrapServer:
+kafkaConnectRestApi:
 image:

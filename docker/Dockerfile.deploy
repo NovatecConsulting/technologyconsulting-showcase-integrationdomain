@@ -6,3 +6,5 @@ USER root
 RUN dnf install -y which findutils && dnf clean all && rm -rf /var/cache/yum
 RUN curl -S -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -o /usr/local/bin/jq && chmod +x /usr/local/bin/jq
 
+USER appuser
+
