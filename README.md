@@ -29,11 +29,7 @@ Two possible scenarios could be:
 
 A ConfigProvider can be used to avoid writing credentials in plain text into configuration files. When working with a cloud environment, in most cases there already is a key vault available to store the secrets. Through implementing the ConfigProvider class provided by Kafka, those secrets are accessible within the configuration files. 
 
-This repository uses the Azure Secret Provider by Lenses.io:
-
-https://docs.lenses.io/4.2/integrations/connectors/secret-providers/azure/
-
-https://github.com/lensesio/secret-provider
+This repository uses the [Azure Secret Provider by Lenses.io](https://docs.lenses.io/4.2/integrations/connectors/secret-providers/azure/).
  
 
 ## 1. Self-Managed/PLAINTEXT
