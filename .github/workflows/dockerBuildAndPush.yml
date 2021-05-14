@@ -25,7 +25,7 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.TC_SHOWCASE_ARM_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.TC_SHOWCASE_ARM_TENANT_ID }}
           STAGE: 'dev'
-        working-directory: ./helperscripts
+        working-directory: ./.github/helperscripts
         run: |
           chmod +x ./getKeyVaultSecrets.sh
           ./getKeyVaultSecrets.sh
