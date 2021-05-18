@@ -15,7 +15,7 @@ env:
 jobs:
   build_Stage_helm_deploy:
     runs-on: ubuntu-latest
-    name: Helm install
+    name: Helm Install Plaintext Protocol
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
