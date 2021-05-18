@@ -1,4 +1,4 @@
-name: helmInstall
+name: helmInstall_Ssl
 
 on:
   workflow_dispatch:
