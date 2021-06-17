@@ -1,0 +1,275 @@
+:toc:
+:toc-title:
+:toclevels: 2
+:sectnums:
+
+= Open Topics
+
+== Enable Kafka Connect plugin isolation mechanism for Lenses secret provider
+
+At the moment (Lenses Secret Provider 2.1.6) it is not possible to use the Lenses Secret Provider with the Kafka Connect plugin isolation mechanism. 
+
+The advantage of this mechanism is, that a plugin is loaded in isolatio and dependency conflicts therefore are avoided. Basically such a mechanism is inevitable for a plugable framework like Kafka Connect.
+
+Therefore, we would also like to be able load the Lenses secret provider in isolation.
+
+=== Issue
+
+Kafka Connect loads each Plugin with separate ClassLoader in order to achieve isolation (see link:https://github.com/apache/kafka/blob/2.8.0/connect/runtime/src/main/java/org/apache/kafka/connect/runtime/isolation/DelegatingClassLoader.java[DelegatingClassLoader]).
+
+.Kafka Connect plugin registration mechanism
+[%collapsible]
+====
+[source,java]
+----
+package org.apache.kafka.connect.runtime.isolation;
+public class DelegatingClassLoader extends URLCLassLoader {
+    ...
+    private void registerPlugin(Path pluginLocation)
+            throws InstantiationException, IllegalAccessException, IOException {
+        log.info("Loading plugin from: {}", pluginLocation);
+        List<URL> pluginUrls = new ArrayList<>();
+        for (Path path : PluginUtils.pluginUrls(pluginLocation)) {
+            pluginUrls.add(path.toUri().toURL());
+        }
+        URL[] urls = pluginUrls.toArray(new URL[0]);
+        if (log.isDebugEnabled()) {
+            log.debug("Loading plugin urls: {}", Arrays.toString(urls));
+        }
+        PluginClassLoader loader = newPluginClassLoader(
+                pluginLocation.toUri().toURL(),
+                urls,
+                this
+        );
+        scanUrlsAndAddPlugins(loader, urls, pluginLocation);
+    }
+
+    private PluginScanResult scanPluginPath(
+            ClassLoader loader,
+            URL[] urls
+    ) throws InstantiationException, IllegalAccessException {
+        ...
+        return new PluginScanResult(
+            ...
+            getServiceLoaderPluginDesc(ConfigProvider.class, loader),
+            ...
+        );
+    }
+
+    private <T> Collection<PluginDesc<T>> getServiceLoaderPluginDesc(Class<T> klass, ClassLoader loader) {
+        ClassLoader savedLoader = Plugins.compareAndSwapLoaders(loader);
+        Collection<PluginDesc<T>> result = new ArrayList<>();
+        try {
+            ServiceLoader<T> serviceLoader = ServiceLoader.load(klass, loader);
+            for (T pluginImpl : serviceLoader) {
+                result.add(new PluginDesc<>((Class<? extends T>) pluginImpl.getClass(),
+                    versionFor(pluginImpl), loader));
+            }
+        } finally {
+            Plugins.compareAndSwapLoaders(savedLoader);
+        }
+        return result;
+    }
+    ...
+}
+----
+====
+
+The link:https://github.com/lensesio/secret-provider/tree/2.1.6[Lenses Secret Provider (2.1.6)] uses link:https://github.com/Azure/azure-sdk-for-java/tree/azure-core_1.4.0[Azure SDK for Java (azure-core 1.4.0)] to connect to Azure Key Vault. 
+In order to instantiate a HttpClient the class link:https://github.com/Azure/azure-sdk-for-java/blob/azure-core_1.4.0/sdk/core/azure-core/src/main/java/com/azure/core/implementation/http/HttpClientProviders.java[HttpClientProviders] uses the Java ServiceLoader.
+
+.Azure Core HttpClient provider implementation
+[%collapsible]
+====
+[source,java]
+----
+package com.azure.core.implementation.http;
+public class HttpClientProviders {
+    ...
+    static {
+        ServiceLoader<HttpClientProvider> serviceLoader = ServiceLoader.load(HttpClientProvider.class);
+        // Use the first provider found in the service loader iterator.
+        Iterator<HttpClientProvider> it = serviceLoader.iterator();
+        if (it.hasNext()) {
+            defaultProvider = it.next();
+        }
+    }
+
+    public static HttpClient createInstance() {
+        if (defaultProvider == null) {
+            throw new IllegalStateException(CANNOT_FIND_HTTP_CLIENT);
+        }
+        return defaultProvider.createInstance();
+    }
+    ...
+}
+----
+====
+
+Unfortunately, the implementation uses the ContextClassLoader of the executing thread. In case of Kafka Connect this is the default ClassLoader, which is not aware of libraries of the Lenses secret provider plugin and therefore cannot find the HttpClient implementation.
+
+.Java ServiceLoader implementation
+[%collapsible]
+====
+[source,java]
+----
+public static <S> ServiceLoader<S> load(Class<S> service) {
+    ClassLoader cl = Thread.currentThread().getContextClassLoader();
+    return new ServiceLoader<>(Reflection.getCallerClass(), service, cl);
+}
+----
+====
+
+=== Solution
+
+Instead of the ContextClassLoader of the executing thread, as parent the classloader that loaded HttpClientProviders class should be used. In most cases this will be the default ClassLoader. But this choice here provides additional flexibility in managed environments that control classloading differently (OSGi, Spring and others) and don't depend on the System classloader to load Connect's classes.
+
+.Suggested implementation for Azure core library to load the HttpClient
+[%collapsible]
+====
+[source,java]
+----
+ServiceLoader<HttpClientProvider> serviceLoader = ServiceLoader.load(HttpClientProvider.class, HttpClientProviders.class.getClassLoader());
+----
+====
+
+NOTE: We implemented this change and created a pull request for the Azure SDK for Java (see https://github.com/Azure/azure-sdk-for-java/pull/20760).
+The pull request has been accapted and released with link:https://github.com/Azure/azure-sdk-for-java/blob/azure-core_1.16.0/sdk/core/azure-core/src/main/java/com/azure/core/implementation/http/HttpClientProviders.java[Azure Core 1.16.0].
+
+
+NOTE: We are already prepared the integration into the Lenses Secret Provider (see https://github.com/ueisele/secret-provider/tree/feature/connect-plugin-support). If the final version of Azure KeyVault Secrets library with the new Azure Core library has been releases, we will alse create a pull request for the Lenses Secret Provider.
+
+== Enable usage of Lenses secret provider together with Confluent Docker images version 6 and higher
+
+The link:https://docs.confluent.io/platform/current/installation/docker/config-reference.html[Confluent Docker images] offer a simple and well tested approach to run Kafka on Docker.
+
+Unfortunately, at the moment (Lenses Secret Provider 2.1.6), the Lenses secrete provider works only with Confluent Docker images until Confluent version 5.5 if a security protocol is used.
+
+We would like to be able to use the Lenses secret provider also with Confluent Docker images for Confluen version 6 and newer.
+
+=== Issue
+
+The Confluent Kafka Connect Docker images waits for a specific amount of time until the configured Kafka cluster is ready.
+This is achieved by executing a check with the link:https://github.com/confluentinc/confluent-docker-utils/tree/master/confluent/docker_utils[cub (Confluent utility belt) tool] before Kafka Connect itself is started (see link:https://github.com/confluentinc/kafka-images/blob/v6.2.0/kafka-connect-base/include/etc/confluent/docker/ensure[ensure script]).
+If a security protocol like SASL_SSL is used, the provided Kafka Connect connfig file is loaded in order to get the required configuration like credentials for the Kafka cluster.
+
+.Command in Kafka Connect Docker image which waits until Kafka is ready
+[%collapsible]
+====
+[source,java]
+----
+if [[ -n "${CONNECT_SECURITY_PROTOCOL-}" ]] && [[ $CONNECT_SECURITY_PROTOCOL != "PLAINTEXT" ]]
+then
+    cub kafka-ready \
+        "${CONNECT_CUB_KAFKA_MIN_BROKERS:-1}" \
+        "${CONNECT_CUB_KAFKA_TIMEOUT:-40}" \
+        -b "$CONNECT_BOOTSTRAP_SERVERS" \
+        --config /etc/"${COMPONENT}"/kafka-connect.properties
+...
+fi
+----
+====
+
+In the case, that the provided configuration contains a config provider configuration, the cub tool tries to load the specific config provider class. It also tries to load this class even if the config provider is actually not used and the credentials are for example defined directly in the config file.
+
+.Part of the kafka-connect.properties file
+[source,yaml]
+----
+"config.providers": "azure"
+"config.providers.azure.class": "io.lenses.connect.secrets.providers.AzureSecretProvider"
+----
+
+However, without additional configuration this will not work, because the cub tool has its own classpath and does not make use of Kafka Connects plugin loading mechanism. Therefore, the cub tool will not find the AzureSecretProvider class and fails.
+
+This can be fixed by adding the Lenses secret provider library also to the classpath of the cub tool. In addition, also the Kafka Connect library must be added to the cub classpath, because the secret provider has a dependency to it, but by default its not in the classpath of cub.
+
+.CUB_CLASSPATH environment variable for Confluent 6 and newer
+[source,yaml]
+----
+CUB_CLASSPATH='"/usr/share/java/cp-base-new/*:/usr/share/java/kafka/*:/usr/share/confluent-hub-components/secret-provider/*"'
+----
+
+Unfortunately, at the moment (Lenses Secret Provider 2.1.6) this will still fail if Confluent 6 or newer is used. The reason for this is that the Lenses secret provider is written in Scala version 2.12 and therefore includes also a dependency to the Scala 2.12 library. However, the CUB_CLASSPATH contains because of Kafka in Confluent 6 or newer already Scala 2.13. Because in this specific case, the ClassLoader first loads Scala 2.13, the AzueSecretProvider cannot be instantiated and failes with an Exception.
+
+.Exception if Lenses secret provider is used with Scala 2.13
+[%collapsible]
+====
+----
+java.util.ServiceConfigurationError: org.apache.kafka.common.config.provider.ConfigProvider: Provider io.lenses.connect.secrets.providers.AzureSecretProvider could not be instantiated
+   at java.base/java.util.ServiceLoader.fail(ServiceLoader.java:582)
+   at java.base/java.util.ServiceLoader$ProviderImpl.newInstance(ServiceLoader.java:804)
+   at java.base/java.util.ServiceLoader$ProviderImpl.get(ServiceLoader.java:722)
+   at java.base/java.util.ServiceLoader$3.next(ServiceLoader.java:1395)
+   at org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader.getServiceLoaderPluginDesc(DelegatingClassLoader.java:379)
+   at org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader.scanPluginPath(DelegatingClassLoader.java:342)
+   at org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader.scanUrlsAndAddPlugins(DelegatingClassLoader.java:268)
+   at org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader.registerPlugin(DelegatingClassLoader.java:260)
+   at org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader.initPluginLoader(DelegatingClassLoader.java:229)
+   at org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader.initLoaders(DelegatingClassLoader.java:206)
+   at org.apache.kafka.connect.runtime.isolation.Plugins.<init>(Plugins.java:61)
+   at org.apache.kafka.connect.cli.ConnectStandalone.main(ConnectStandalone.java:79)
+Caused by: java.lang.NoSuchMethodError: 'scala.collection.mutable.Map scala.collection.mutable.Map$.empty()'
+   at io.lenses.connect.secrets.providers.AzureSecretProvider.<init>(AzureSecretProvider.scala:29)
+   at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+   at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)
+   at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+   at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:490)
+   at java.base/java.util.ServiceLoader$ProviderImpl.newInstance(ServiceLoader.java:780)
+   ... 10 more
+----
+====
+
+This can be resolved by downgrading Kafka Connect to version 5.5.1 (where the same Scala version is used as in the Lenses secret provider).
+
+.CUB_CLASSPATH environment variable for Confluent 5.5 and older
+[%collapsible]
+====
+[source,yaml]
+----
+CUB_CLASSPATH='"/etc/confluent/docker/docker-utils.jar:/usr/share/java/kafka/*:/usr/share/confluent-hub-components/secret-provider/*"'
+----
+====
+
+=== Solution
+
+There are several possible solutions to use the Lenses secret provider with Kafka Connect Docker images 6 or newer .
+
+* Do not specifiy the config provider in the Kafka Connect configuration and require that usage of provider is only defined in the individual connector configs.
+** It would be possible to provide the credentials for Azure Key Vault still in the Kafka Connect configuration.
+** Question: Is it possible to automatically authenticate with the Pod Service Account by default?
+* Create a custom Kafka Connect image without the Kafka readiness check.
+** The readiness is basically only important if Kafka Connect is deployed together withe the Kafka cluster. This avoides restarts of the Kafka Connect container.
+* Adjust Lenses secret provider implementation
+** Try to change implementation in a way that the secret provider can compiled and releases for Scala 2.12 and Scala 2.13.
+** Release a shadow jar with relocated dependencies, to avoid conflicts with other libraries.
+** In addition it would be nice to remove dependency to Kafka Connect (basically this dependency is not needed), 
+  create secret provider jar with relocated dependecies (like Scala)
+* Think about adding plugin loading mechanism of Kafka Connect to Kafka client.
+
+== Deploy Kafka Connect to K8S without plaintext passwords in manifest file 
+
+At the moment the credentials for Azure Key Vault as well as for Confluent Cloud are directly set as config by the GitHub Actions pipeline.
+The consequence is, that the K8S deployment manifest directly contains those credentials in plaintext.
+
+We looking for a approach which externalizes those secrets, too.
+
+* Azure Key Vault credentials as Kubernetes Secrets
+* Use Lenses secret provider also to retrieve Confluent cloud credentials in Kafka Connect config
+* Would it be possible to use the AKS credentials (or pod service account) for Azure Key Vault authentication?
+** azure.auth.method=default (https://docs.lenses.io/4.1/integrations/connectors/secret-providers/azure/)
+* Could we automatically inject credentials from Azure Key Vault as environment variables via https://akv2k8s.io/ ?
+** Usage of enviroment variables may be dangoures, because if for example also an environment config provider is provided, environment variable values may be injected into Kafka messages.
+** Could we automatically sync Azure Key Vault secrets to K8S native Secrets via https://akv2k8s.io/ ?
+
+== Simplified deployment of Kafka Connect and Connectors
+
+At the moment, we deploy the connectors via Helm by the usage of a simple deployment Bash script. Basically a Helm Chart is created which contains the Connector config files and the deployment script. After the Helm Chart has been deployed a K8S Job is started which runs the deployment script and registers the connector via the Kafa Connect Rest API. At the moment only install works. An uninstall of the Helm release does not remove the Connector.
+
+There are several possible solutions, which could improve the connector deployment. In order to avoid a lot of manual development to create a generic deployment Helm Chart, we would prefer to evalute the Strimzi Kafka operator.
+
+Besides Kafka, Strimzi operator manages also Kafka Connect clusters and connectors (see https://strimzi.io/docs/operators/latest/overview.html#configuration-points-connect_str):
+
+* Teams could deploy there custom Kafka Connect clusters via a simple Yaml file 
+* Would allows it to dynamically create images with required connectors
+* Teams could also deploy Connectors to their Kafka Connect cluster via a simple Yaml file
+* Operator manages complete lifecycle of connectors and also ensures that connectors are uninstalled

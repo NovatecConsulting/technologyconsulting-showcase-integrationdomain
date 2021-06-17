@@ -1,0 +1,420 @@
+:toc:
+:toc-title:
+:toclevels: 2
+:sectnums:
+
+= Kafka Connect Plugins and the Plugin Loading Mechanism
+
+_Kafka Connect_ is a component of _Apache Kafka_ which provides a way to simple integrate external data sources and sinks by streaming data to and from _Apache Kafka_.
+It can be operated as a centralized component and allows it to define _connectors_ for the actual connection. _Kafka Connect_ itself is independent form specific source or sinks. If a specific system should be integrated a specific _connector_ library can be installed.
+For example, the `link:https://www.confluent.de/hub/confluentinc/kafka-connect-jdbc[_confluentinc/kafka-connect-jdbc_]` _connector_ can be used to ingest data from databases into _Kafka_ and also to insert data from _Kafka_ into databases.
+
+This deep dive discusses the plugin mechanism of _Kafka Connect_ in detail, which defines how _connectors_ and other plugins for _Kafka Connect_ are loaded. 
+
+Would you like to know more?
+
+* https://kafka.apache.org/documentation/#connect
+* https://docs.confluent.io/platform/6.1.1/connect/index.html
+
+== Plugin Types
+
+In _Kafka Connect_ not only _connectors_ can be added. It supports also additional extensions which which can be added as plugin.
+
+Plugin types and their interfaces and abstract classes for which _Kafka Connect_ discovers implementations:
+
+    * <<Connectors>>
+    ** `Connector`
+    * <<Externalizing Configurations>>
+    ** `ConfigProvider`
+    * <<Converters and S2erialization>>
+    ** `Converter`
+    ** `HeaderConverter`
+    * <<Transforms>>
+    ** `Transformation`
+    * <<Filters and Predicates>>
+    ** `Predicate`
+    * <<Connect Rest Extensions>>
+    ** `ConnectRestExtension`
+    * <<Override Policy for Connector Client Configs>>
+    ** `ConnectorClientConfigOverridePolicy`
+
+This section gives a rough overview about the plugin types of _Kafka Connect_.
+
+=== Connectors
+
+_Connectors_ are the main plugin type of _Kafka Connect_. They manage the actual integration with another system either as source which ingests data into _Kafka_ or as sink which pushes data to an external system.
+
+Many _connectors_ are provided by Confluent on link:https://www.confluent.de/hub/[Confluent Hub]. There are also a lot of community connectors, for example _Apache Camel_ community released a set of link:https://camel.apache.org/camel-kafka-connector/latest/8[_connectors_ based on _Apache Camel_].
+
+In order to implement a _connector_ the interface `link:https://github.com/apache/kafka/blob/2.8.0/connect/api/src/main/java/org/apache/kafka/connect/connector/Connector.java[org.apache.kafka.connect.connector.Connector]` must be implemented.
+
+_Kafka Connect_ discovers _connectors_ via reflection and instantiates objects of all concrete implementations of `Connector` abstract class.
+
+Would you like to know more?
+
+* https://docs.confluent.io/platform/6.1.1/connect/devguide.html
+* https://docs.confluent.io/platform/current/connect/devguide.html#packaging
+
+=== Externalizing Configurations
+
+Its easy to write the configuration for a _connector_. It is just _JSON_. However, it is not a good idea to embed credentials into a config file.
+link:https://cwiki.apache.org/confluence/display/KAFKA/KIP-297%3A+Externalizing+Secrets+for+Connect+Configurations[KIP-297] proposed an approach to externalize the secrets for a _connector_. Fortunatly, this was implemented and released with _Apache Kafka 2.0.0_. With a so called config provider its now possible to retrieve secrets from an centralized secrets management system like _Hashicorp Vault_ or _Azure Key Vault_.
+
+There are already some good config providers available, for example the secret providers provided by _link:https://docs.lenses.io/4.2/integrations/connectors/secret-providers/[Lenses]_.
+
+In order to implement a config provider the interface `link:https://github.com/apache/kafka/blob/2.8.0/clients/src/main/java/org/apache/kafka/common/config/provider/ConfigProvider.java[org.apache.kafka.common.config.provider.ConfigProvider]` must be implemented.
+
+_Kafka Connect_ discovers `ConfigProvider` by using the standard _Java_ `ServiceLoader` mechanism. Therefore an additional `META-INF/services/org.apache.org.apache.kafka.common.config.provider.ConfigProvider` file must be provided containg the fully qualified name of the classes that implement the `ConfigProvider` interface.
+
+Would you like to know more?
+
+* https://cwiki.apache.org/confluence/display/KAFKA/KIP-297%3A+Externalizing+Secrets+for+Connect+Configurations
+* https://docs.confluent.io/platform/current/connect/security.html#externalizing-secrets
+* https://rmoff.net/2019/05/24/putting-kafka-connect-passwords-in-a-separate-file-/-externalising-secrets/
+* https://lenses.io/blog/2020/05/securing-kafka-connect-azure-keyvault/
+
+=== Converters and Serialization
+
+Converters are responsible for handling serialization and deserialization of data. More precise they handle conversion between _Kafka Connect_ format and the key, value and headers format of _Kafka_ records.
+
+In order to implement a converter for key and values the interface `link:https://github.com/apache/kafka/blob/2.8.0/connect/api/src/main/java/org/apache/kafka/connect/storage/Converter.java[org.apache.kafka.connect.storage.Converter]` must be implemented.
+
+Since _Apache Kafka 2.4.0_ converters also support _Kafka_ record headers. It was proposed in link:https://cwiki.apache.org/confluence/display/KAFKA/KIP-440%3A+Extend+Connect+Converter+to+support+headers[KIP-440].
+
+In order to implement a converter for headers the interface `link:https://github.com/apache/kafka/blob/2.8.0/connect/api/src/main/java/org/apache/kafka/connect/storage/HeaderConverter.java[org.apache.kafka.connect.storage.HeaderConverter]`` must be implemented. 
+
+_Kafka Connect_ discovers converters via reflection and instantiates objects of all concrete implementations of `Converter` and `HeaderConverter` interfaces.
+
+Would you like to know more?
+
+* https://www.confluent.de/blog/kafka-connect-deep-dive-converters-serialization-explained/
+* https://cwiki.apache.org/confluence/display/KAFKA/KIP-440%3A+Extend+Connect+Converter+to+support+headers
+
+=== Transforms
+
+Transforms allows it to manipulate data before it is published to _Kafka_ or before it is forwarded to an external system. It was added in _Apache Kafka 0.10.2_ with link:https://cwiki.apache.org/confluence/display/KAFKA/KIP-66%3A+Single+Message+Transforms+for+Kafka+Connect[KIP-66].
+
+_Apache Kafka_ packages _Kafka Connect_ already with some transforms which can be used out of the box: _link:https://docs.confluent.io/platform/current/connect/transforms/overview.html[Apache Connect Transforms]_
+
+However there are already a lot of additional transforms provided by the community: link:https://rmoff.net/2020/12/23/twelve-days-of-smt-day-12-community-transformations/[Community transforms described by Robin Moffatt]
+
+In order to implement a converter for key and values the interface `link:https://github.com/apache/kafka/blob/2.8.0/connect/api/src/main/java/org/apache/kafka/connect/transforms/Transformation.java[org.apache.kafka.connect.transforms.Transformation]`` must be implemented.
+
+_Kafka Connect_ discovers transforms via reflection and instantiates objects of all concrete implementations of `Transformation` interface.
+
+Would you like to know more?
+
+* https://www.confluent.de/blog/kafka-connect-single-message-transformation-tutorial-with-examples/
+* https://cwiki.apache.org/confluence/display/KAFKA/KIP-66%3A+Single+Message+Transforms+for+Kafka+Connect
+* https://docs.confluent.io/platform/6.1.1/connect/transforms/overview.html
+* https://rmoff.net/2020/12/23/twelve-days-of-smt-day-12-community-transformations/
+
+=== Filters and Predicates
+
+In _Apache Kafka 2.6.0_ with link:https://cwiki.apache.org/confluence/display/KAFKA/KIP-585%3A+Filter+and+Conditional+SMTs[KIP-585] support for defining link:https://docs.confluent.io/platform/6.1.1/connect/transforms/filter-ak.html#predicates[predicates] was added, as well as a new link:https://docs.confluent.io/platform/current/connect/transforms/filter-ak.html#ak-filter[filter transform]. This combination enables it to conditionally drop messages.
+
+In order to implement a custom predicate the interface `link:https://github.com/apache/kafka/blob/2.8.0/connect/api/src/main/java/org/apache/kafka/connect/transforms/predicates/Predicate.java[org.apache.kafka.connect.transforms.predicates.Predicate]` must be implemented.
+
+_Kafka Connect_ discovers predicates via reflection and instantiates objects of all concrete implementations of `Predicate` interfaces.
+
+Would you like to know more?
+
+* https://rmoff.net/2020/12/22/twelve-days-of-smt-day-11-predicate-and-filter/
+* https://docs.confluent.io/platform/6.1.1/connect/transforms/filter-ak.html#ak-filter
+* https://cwiki.apache.org/confluence/display/KAFKA/KIP-585%3A+Filter+and+Conditional+SMTs
+
+=== Connect Rest Extensions
+
+_Kafka Connect_ provides a link:https://docs.confluent.io/platform/current/connect/references/restapi.html[REST API] for managing the _connectors_.
+In most companies, there is no question that access to the API must be secured. The possibility to plug in capabilities like authentication was released with _Apache Kafka 2.0.0_. The proposal is described in link:https://cwiki.apache.org/confluence/display/KAFKA/KIP-285%3A+Connect+Rest+Extension+Plugin[KIP-285], which provides also a good introduction to the topic.
+
+_Kafka Connect_ provides an link:https://docs.confluent.io/platform/6.1.1/security/basic-auth.html#basic-auth-kconnect[implementation to support Basic Authentication], which can be enabled by setting the following configuration:
+
+[source,properties]
+----
+rest.extension.classes=org.apache.kafka.connect.rest.basic.auth.extension.BasicAuthSecurityRestExtension
+----
+
+The primary use case for this extension type may be authentication, however, it is not limited to this use case. The interface `ConnectRestExtension` allowes the registration of any _JAX-RS_ component like filters or providers.
+
+Some possible additional use cases besides authentication are:
+
+* Filter for authorization
+* Filters for policy enforcement that rewrite or validate the requests to enforce specific constraints on the _connector_ configuration
+
+In order to implement a _Kafka Connect_ REST extension the interface `link:https://github.com/apache/kafka/blob/2.8.0/connect/api/src/main/java/org/apache/kafka/connect/rest/ConnectRestExtension.java[org.apache.kafka.connect.rest.ConnectRestExtension]` must be implemented.
+
+_Kafka Connect_ discovers _Kafka Connect_ REST by using the standard _Java_ `ServiceLoader` mechanism. Therefore an additional `META-INF/services/org.apache.kafka.connect.rest.extension.ConnectRestExtension` file must be provided containg the fully qualified name of the classes that implement the `ConnectRestExtension` interface.
+
+Would you like to know more?
+
+* https://cwiki.apache.org/confluence/display/KAFKA/KIP-285%3A+Connect+Rest+Extension+Plugin
+* https://docs.confluent.io/platform/6.1.1/security/basic-auth.html#basic-auth-kconnect
+
+=== Override Policy for Connector Client Configs
+
+In _Kafka Connect_ the individual _connectors_ inherit their client configurations from the worker properties. Before _Apache Kafka 2.3.0_ all worker properties that are prefixed with `producer.` or `consumer.` are applied to all _connectors_.
+
+With _Apacke Kafka 2.3.0_ link:https://cwiki.apache.org/confluence/display/KAFKA/KIP-458%3A+Connector+Client+Config+Override+Policy[KIP-458] was released. Now it is possible to define an override policy in the worker configuration which defines what client configurations can be overriden by the _connectors_.
+
+Three implementations are provided by _Kafka Connect_. The default is `None` which disallows any client configuration to be overridden. The other possible policies are `All` and `Principal`. 
+
+The policy is defined by setting `connector.client.config.override.policy` to the policy name or the class name.
+
+In order to implement a client config override policy the interface `link:https://github.com/apache/kafka/blob/2.8.0/connect/api/src/main/java/org/apache/kafka/connect/connector/policy/ConnectorClientConfigOverridePolicy.java[org.apache.kafka.connect.connector.policy.ConnectorClientConfigOverridePolicy]` must be implemented.
+
+_Kafka Connect_ discovers `ConnectorClientConfigOverridePolicy` by using the standard _Java_ `ServiceLoader` mechanism. Therefore an additional `META-INF/services/org.apache.kafka.connect.connector.policy.ConnectorClientConfigOverridePolicy` file must be provided containg the fully qualified name of the classes that implement the `ConnectorClientConfigOverridePolicy` interface.
+
+Would you like to know more?
+
+* https://cwiki.apache.org/confluence/display/KAFKA/KIP-458%3A+Connector+Client+Config+Override+Policy
+* https://docs.confluent.io/platform/6.1.1/installation/configuration/connect/index.html#connector.client.config.override.policy
+
+== Plugin Installation
+
+Basically, the link:https://rmoff.net/2020/06/19/how-to-install-connector-plugins-in-kafka-connect/[blog article of Robin Moffatt about _connector_ plugin installation] says already everthing, so there is not much to add.
+
+The only thing which I would like to mention has to do with link:https://docs.confluent.io/platform/6.1.1/installation/docker/development.html#add-connectors-or-software[the installation of plugins into the _Confluent Platform_ _Docker_ image for _Kafka Connect_].
+Since _Confluent Platform 5.4.0_ in the corresponding _Confluent_ _Docker_ image _Kafka Connect_ is started as user `appuser` and not as `root`.
+The consequence is, that if you add a plugin to a custom plugin path, it must be ensured that it is accessible by user `appuser`. If you just map a local folder into a direcory of the container which did not exist before, it will be only accessable by `root`. The easiest way would be to map your local directory to `/usr/share/confluent-hub-components/` because this folder has access rights for user `appuser`. In addition this path is already part of the link:https://github.com/confluentinc/kafka-images/blob/a7218c9ab5d6ae44989dd9616986021dbc4154a5/kafka-connect-base/Dockerfile.ubi8#L67[default plugin path] of the _Confluent Kafka Connect_ _Docker_ image.
+If you want to use a different direcory, you must create it explicitly and provide access rights for `appuser`.
+
+.Bake Docker image with custom plugin direcory and installed connector and transformer
+[source,Dockerfile]
+----
+FROM confluentinc/cp-kafka-connect-base:6.6.1
+
+# Create custom plugin directory and add it to the plugin path
+USER root
+RUN mkdir -p /usr/share/custom-connect-plugins \
+    && chown appuser:appuser -R /usr/share/custom-connect-plugins
+USER appuser
+ENV CONNECT_PLUGIN_PATH="/usr/share/java,/usr/share/confluent-hub-components,/usr/share/custom-connect-plugins"
+
+# Install third-party connector from external source
+RUN wget https://github.com/castorm/kafka-connect-http/releases/download/v0.8.11/castorm-kafka-connect-http-0.8.11.zip \
+    && confluent-hub install --no-prompt castorm-kafka-connect-http-0.8.11.zip \
+    && rm castorm-kafka-connect-http-0.8.11.zip
+
+# Install transformer plugin to custom directory 
+RUN mkdir -p /usr/share/confluent-hub-components/kafka-connect-smt-expandjsonsmt \
+    && curl -L https://github.com/RedHatInsights/expandjsonsmt/releases/download/0.0.7/kafka-connect-smt-expandjsonsmt-0.0.7.tar.gz \
+    | tar -zx -C /usr/share/confluent-hub-components/kafka-connect-smt-expandjsonsmt
+----
+
+Would you like to know more?
+
+* https://rmoff.net/2020/06/19/how-to-install-connector-plugins-in-kafka-connect/
+* https://docs.confluent.io/home/connect/userguide.html#connect-installing-plugins
+* https://docs.confluent.io/platform/6.1.1/installation/docker/development.html#add-connectors-or-software
+* https://github.com/confluentinc/kafka-images/blob/a7218c9ab5d6ae44989dd9616986021dbc4154a5/kafka-connect-base/Dockerfile.ubi8#L67
+
+== Plugin Isolation
+
+_Kafka Connect_ is very extensible in order to integrate with a wide range of data sources and sinks. Of course, such extensions are developed independently of _Kafka Connect_ itself.
+
+Because plugin isolation is such a fundamental requirement for an extensible framework, it was already released with Apache Kafka 0.11.0 
+
+Describe how plugin loading works, whow isolation is achieved and why this is important.
+
+Would you like to know more?
+
+* https://cwiki.apache.org/confluence/display/KAFKA/KIP-146+-+Classloading+Isolation+in+Connect
+* https://github.com/apache/kafka/blob/99b9b3e84f4e98c3f07714e1de6a139a004cbc5b/connect/runtime/src/main/java/org/apache/kafka/connect/runtime/isolation/DelegatingClassLoader.java#L333
+* https://github.com/apache/kafka/blob/ebb1d6e21cc9213071ee1c6a15ec3411fc215b81/connect/runtime/src/main/java/org/apache/kafka/connect/runtime/isolation/DelegatingClassLoader.java#L204
+
+== Pitfalls of Plugin Isolation
+
+Describe what can break plugins and as consequence what are requirements for plugins.
+
+[source,java]
+----
+public static <S> ServiceLoader<S> load(Class<S> service) {
+    ClassLoader cl = Thread.currentThread().getContextClassLoader();
+    return new ServiceLoader<>(Reflection.getCallerClass(), service, cl);
+}
+----
+
+Would you like to know more?
+
+* https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ServiceLoader.html
+
+=== Lenses Azure Key Vault Secret Provider
+
+The Lenses Secret Provider (https://github.com/lensesio/secret-provider (2.1.6)) uses Azure SDK for Java (https://github.com/Azure/azure-sdk-for-java (azure-core 1.4.0)) to connect to Azure KeyVault. This uses Java ServiceLoader to instantiate HttpClient.
+
+Unfortunately it uses the ContextClassLoader of the Thread which is not aware of libraries of Plugin and therefore cannot find the Http library.
+
+Therefore, at the moment to make the Secret Provider work, it must be also added to `CLASSPATH` of Kafka Connect. With this workaround the Service Loader of the Azure Java SDK is able to find a implementation for HttpClient.
+
+[source,Dockerfile]
+----
+FROM confluentinc/cp-kafka-connect-base:6.1.1
+
+# Ensure that /usr/share/confluent-hub-components/ is in plugin path (default)
+ENV CONNECT_PLUGIN_PATH=/usr/share/java,/usr/share/confluent-hub-components/
+
+# Install JDBC Connector to /usr/share/confluent-hub-components/
+RUN confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:10.0.1
+
+# Download Lenses Secret Providers library to /usr/share/confluent-hub-components/secret-provider/ which is part of plugin path
+RUN mkdir -p /usr/share/confluent-hub-components/secret-provider \
+        && wget -qP /usr/share/confluent-hub-components/secret-provider https://github.com/lensesio/secret-provider/releases/download/2.1.6/secret-provider-2.1.6-all.jar
+# Add Lenses Secret Providers directory to CLASSPATH (Kafka Connect directory is added by default when connect is started), to ensure that ServiceLoader finds HttpClient
+ENV CLASSPATH=/usr/share/confluent-hub-components/secret-provider/*
+----
+
+You should not only use the Classpath for loading the Secret Provider, because at least until version 2.1 Scala 2.12 is used. However, since Confluent 6.0.0 Apache Kafka with Scala version 2.13 is used. Therefore, loading the Secret Provider from Classpath would not work and fail with an Exception (ToDo: Check if this is the case and which exception is thrown).
+I would like to note, that even though it works with the provided workaround (Plugin Path and Classpath), this solution is unclean and dangerous. With this configuration (if Confluent >= 6.0.0 is used, and Secret Provider <= 2.1) the classpath contains Scala 2.13 (Apache Kafka) and Scala 2.12 (Secret Provider). This is something you never should do, because there is no defined precedence on how the Classloader loads classes. From which library the Scala classes are loaded depends soley on the order in which the libraries are loaded by the classloader. In this case for this Docker image it works, however there is no guarantee, that it always works.
+
+Therefore, you should not use the Lenses Secret Providers with Confluent 6.0.0 or higher.
+
+[source,bash]
+----
+mkdir -p /usr/share/javax/secret-provider \
+    && wget -qP /usr/share/javax/secret-provider https://github.com/lensesio/secret-provider/releases/download/2.1.6/secret-provider-2.1.6-all.jar
+export CLASSPATH="/usr/share/javax/secret-provider/*"
+export CONNECT_PLUGIN_PATH"=/usr/share/java,/usr/share/confluent-hub-components/"
+----
+
+[source,log]
+----
+jvm.classpath = /usr/share/javax/secret-provider/secret-provider-2.1.6-all.jar:/usr/share/java/kafka/zookeeper-3.5.9.jar:/usr/share/java/kafka/jopt-simple-5.0.4.jar:/usr/share/java/kafka/commons-cli-1.4.jar:/usr/share/java/kafka/connect-file-6.1.1-ccs.jar:/usr/share/java/kafka/rocksdbjni-5.18.4.jar:/usr/share/java/kafka/kafka-streams-scala_2.13-6.1.1-ccs.jar:/usr/share/java/kafka/jersey-client-2.31.jar:/usr/share/java/kafka/osgi-resource-locator-1.0.3.jar:...
+----
+
+[source,log]
+----
+[2021-04-29 22:12:06,769] INFO Registered loader: jdk.internal.loader.ClassLoaders$AppClassLoader@9e89d68 (org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader)
+[2021-04-29 22:12:06,770] INFO Added plugin 'io.lenses.connect.secrets.providers.AzureSecretProvider' (org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader)
+[2021-04-29 22:12:06,770] INFO Added plugin 'io.lenses.connect.secrets.providers.VaultSecretProvider' (org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader)
+[2021-04-29 22:12:06,770] INFO Added plugin 'io.lenses.connect.secrets.providers.AWSSecretProvider' (org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader)
+[2021-04-29 22:12:06,770] INFO Added plugin 'io.lenses.connect.secrets.providers.Aes256DecodingProvider' (org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader)
+[2021-04-29 22:12:06,770] INFO Added plugin 'io.lenses.connect.secrets.providers.ENVSecretProvider' (org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader)
+----
+
+
+
+
+
+[source,bash]
+----
+wget -qP /usr/share/java/kafka https://github.com/lensesio/secret-provider/releases/download/2.1.6/secret-provider-2.1.6-all.jar
+export CONNECT_PLUGIN_PATH"=/usr/share/java,/usr/share/confluent-hub-components/"
+----
+
+[source,log]
+----
+[2021-04-29 22:06:50,021] INFO Loading plugin from: /usr/share/java/kafka (org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader)
+[2021-04-29 22:06:50,029] DEBUG Loading plugin urls: [file:/usr/share/java/kafka/activation-1.1.1.jar, file:/usr/share/java/kafka/aopalliance-repackaged-2.6.1.jar, file:/usr/share/java/kafka/argparse4j-0.7.0.jar, file:/usr/share/java/kafka/audience-annotations-0.5.0.jar, file:/usr/share/java/kafka/commons-cli-1.4.jar, file:/usr/share/java/kafka/commons-lang3-3.8.1.jar, file:/usr/share/java/kafka/confluent-log4j-1.2.17-cp2.jar, file:/usr/share/java/kafka/connect-api-6.1.1-ccs.jar, file:/usr/share/java/kafka/connect-basic-auth-extension-6.1.1-ccs.jar, file:/usr/share/java/kafka/connect-file-6.1.1-ccs.jar, file:/usr/share/java/kafka/connect-json-6.1.1-ccs.jar, file:/usr/share/java/kafka/connect-mirror-6.1.1-ccs.jar, file:/usr/share/java/kafka/connect-mirror-client-6.1.1-ccs.jar, file:/usr/share/java/kafka/connect-runtime-6.1.1-ccs.jar, file:/usr/share/java/kafka/connect-transforms-6.1.1-ccs.jar, file:/usr/share/java/kafka/hk2-api-2.6.1.jar, file:/usr/share/java/kafka/hk2-locator-2.6.1.jar, file:/usr/share/java/kafka/hk2-utils-2.6.1.jar, file:/usr/share/java/kafka/jackson-annotations-2.10.5.jar, file:/usr/share/java/kafka/jackson-core-2.10.5.jar, file:/usr/share/java/kafka/jackson-databind-2.10.5.1.jar, file:/usr/share/java/kafka/jackson-dataformat-csv-2.10.5.jar, file:/usr/share/java/kafka/jackson-datatype-jdk8-2.10.5.jar, file:/usr/share/java/kafka/jackson-jaxrs-base-2.10.5.jar, file:/usr/share/java/kafka/jackson-jaxrs-json-provider-2.10.5.jar, file:/usr/share/java/kafka/jackson-module-jaxb-annotations-2.10.5.jar, file:/usr/share/java/kafka/jackson-module-paranamer-2.10.5.jar, file:/usr/share/java/kafka/jackson-module-scala_2.13-2.10.5.jar, file:/usr/share/java/kafka/jakarta.activation-api-1.2.1.jar, file:/usr/share/java/kafka/jakarta.annotation-api-1.3.5.jar, file:/usr/share/java/kafka/jakarta.inject-2.6.1.jar, file:/usr/share/java/kafka/jakarta.validation-api-2.0.2.jar, file:/usr/share/java/kafka/jakarta.ws.rs-api-2.1.6.jar, file:/usr/share/java/kafka/jakarta.xml.bind-api-2.3.2.jar, file:/usr/share/java/kafka/javassist-3.25.0-GA.jar, file:/usr/share/java/kafka/javassist-3.26.0-GA.jar, file:/usr/share/java/kafka/javax.servlet-api-3.1.0.jar, file:/usr/share/java/kafka/javax.ws.rs-api-2.1.1.jar, file:/usr/share/java/kafka/jaxb-api-2.3.0.jar, file:/usr/share/java/kafka/jersey-client-2.31.jar, file:/usr/share/java/kafka/jersey-common-2.31.jar, file:/usr/share/java/kafka/jersey-container-servlet-2.31.jar, file:/usr/share/java/kafka/jersey-container-servlet-core-2.31.jar, file:/usr/share/java/kafka/jersey-hk2-2.31.jar, file:/usr/share/java/kafka/jersey-media-jaxb-2.31.jar, file:/usr/share/java/kafka/jersey-server-2.31.jar, file:/usr/share/java/kafka/jetty-client-9.4.38.v20210224.jar, file:/usr/share/java/kafka/jetty-continuation-9.4.38.v20210224.jar, file:/usr/share/java/kafka/jetty-http-9.4.38.v20210224.jar, file:/usr/share/java/kafka/jetty-io-9.4.38.v20210224.jar, file:/usr/share/java/kafka/jetty-security-9.4.38.v20210224.jar, file:/usr/share/java/kafka/jetty-server-9.4.38.v20210224.jar, file:/usr/share/java/kafka/jetty-servlet-9.4.38.v20210224.jar, file:/usr/share/java/kafka/jetty-servlets-9.4.38.v20210224.jar, file:/usr/share/java/kafka/jetty-util-9.4.38.v20210224.jar, file:/usr/share/java/kafka/jetty-util-ajax-9.4.38.v20210224.jar, file:/usr/share/java/kafka/jopt-simple-5.0.4.jar, file:/usr/share/java/kafka/kafka-clients-6.1.1-ccs.jar, file:/usr/share/java/kafka/kafka-log4j-appender-6.1.1-ccs.jar, file:/usr/share/java/kafka/kafka-raft-6.1.1-ccs.jar, file:/usr/share/java/kafka/kafka-streams-6.1.1-ccs.jar, file:/usr/share/java/kafka/kafka-streams-examples-6.1.1-ccs.jar, file:/usr/share/java/kafka/kafka-streams-scala_2.13-6.1.1-ccs.jar, file:/usr/share/java/kafka/kafka-streams-test-utils-6.1.1-ccs.jar, file:/usr/share/java/kafka/kafka-tools-6.1.1-ccs.jar, file:/usr/share/java/kafka/kafka_2.13-6.1.1-ccs-javadoc.jar, file:/usr/share/java/kafka/kafka_2.13-6.1.1-ccs-sources.jar, file:/usr/share/java/kafka/kafka_2.13-6.1.1-ccs-test-sources.jar, file:/usr/share/java/kafka/kafka_2.13-6.1.1-ccs-test.jar, file:/usr/share/java/kafka/kafka_2.13-6.1.1-ccs.jar, file:/usr/share/java/kafka/lz4-java-1.7.1.jar, file:/usr/share/java/kafka/maven-artifact-3.6.3.jar, file:/usr/share/java/kafka/metrics-core-2.2.0.jar, file:/usr/share/java/kafka/netty-buffer-4.1.59.Final.jar, file:/usr/share/java/kafka/netty-codec-4.1.59.Final.jar, file:/usr/share/java/kafka/netty-common-4.1.59.Final.jar, file:/usr/share/java/kafka/netty-handler-4.1.59.Final.jar, file:/usr/share/java/kafka/netty-resolver-4.1.59.Final.jar, file:/usr/share/java/kafka/netty-transport-4.1.59.Final.jar, file:/usr/share/java/kafka/netty-transport-native-epoll-4.1.59.Final.jar, file:/usr/share/java/kafka/netty-transport-native-unix-common-4.1.59.Final.jar, file:/usr/share/java/kafka/osgi-resource-locator-1.0.3.jar, file:/usr/share/java/kafka/paranamer-2.8.jar, file:/usr/share/java/kafka/plexus-utils-3.2.1.jar, file:/usr/share/java/kafka/reflections-0.9.12.jar, file:/usr/share/java/kafka/rocksdbjni-5.18.4.jar, file:/usr/share/java/kafka/scala-collection-compat_2.13-2.2.0.jar, file:/usr/share/java/kafka/scala-java8-compat_2.13-0.9.1.jar, file:/usr/share/java/kafka/scala-library-2.13.3.jar, file:/usr/share/java/kafka/scala-logging_2.13-3.9.2.jar, file:/usr/share/java/kafka/scala-reflect-2.13.3.jar, file:/usr/share/java/kafka/secret-provider-2.1.6-all.jar, file:/usr/share/java/kafka/slf4j-api-1.7.30.jar, file:/usr/share/java/kafka/slf4j-log4j12-1.7.30.jar, file:/usr/share/java/kafka/snappy-java-1.1.7.7.jar, file:/usr/share/java/kafka/zookeeper-3.5.9.jar, file:/usr/share/java/kafka/zookeeper-jute-3.5.9.jar, file:/usr/share/java/kafka/zstd-jni-1.4.5-6.jar] (org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader)
+----
+
+[source,log]
+----
+[2021-04-29 21:31:23,632] ERROR Stopping due to error (org.apache.kafka.connect.cli.ConnectStandalone)
+java.util.ServiceConfigurationError: org.apache.kafka.common.config.provider.ConfigProvider: Provider io.lenses.connect.secrets.providers.AzureSecretProvider could not be instantiated
+   at java.base/java.util.ServiceLoader.fail(ServiceLoader.java:582)
+   at java.base/java.util.ServiceLoader$ProviderImpl.newInstance(ServiceLoader.java:804)
+   at java.base/java.util.ServiceLoader$ProviderImpl.get(ServiceLoader.java:722)
+   at java.base/java.util.ServiceLoader$3.next(ServiceLoader.java:1395)
+   at org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader.getServiceLoaderPluginDesc(DelegatingClassLoader.java:379)
+   at org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader.scanPluginPath(DelegatingClassLoader.java:342)
+   at org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader.scanUrlsAndAddPlugins(DelegatingClassLoader.java:268)
+   at org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader.registerPlugin(DelegatingClassLoader.java:260)
+   at org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader.initPluginLoader(DelegatingClassLoader.java:229)
+   at org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader.initLoaders(DelegatingClassLoader.java:206)
+   at org.apache.kafka.connect.runtime.isolation.Plugins.<init>(Plugins.java:61)
+   at org.apache.kafka.connect.cli.ConnectStandalone.main(ConnectStandalone.java:79)
+Caused by: java.lang.NoSuchMethodError: 'scala.collection.mutable.Map scala.collection.mutable.Map$.empty()'
+   at io.lenses.connect.secrets.providers.AzureSecretProvider.<init>(AzureSecretProvider.scala:29)
+   at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+   at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)
+   at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+   at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:490)
+   at java.base/java.util.ServiceLoader$ProviderImpl.newInstance(ServiceLoader.java:780)
+   ... 10 more
+----
+
+
+
+Would you like to know more?
+
+* https://github.com/Azure/azure-sdk-for-java/blob/225c41c2adc3fca9f2ab9cf3cee1e1092e85158c/sdk/core/azure-core/src/main/java/com/azure/core/implementation/http/HttpClientProviders.java#L26
+
+=== Establish Compatibility with Plugin Isolation
+
+Would you like to know more?
+
+* https://github.com/Azure/azure-sdk-for-java/pull/20760
+
+== Config Providers and the Confluent Kafka Connect Docker Image
+
+If you use the Lenses Azure Secret Provider with the previously provided quick fix, it will still not work with the link:https://docs.confluent.io/platform/6.1.1/installation/docker/config-reference.html#kconnect-long-configuration[Confluent Kafka Connect Docker Image]. 
+
+Would you like to know more?
+
+* https://docs.confluent.io/platform/6.1.1/installation/docker/config-reference.html#kconnect-long-configuration
+
+=== The Confluent Platform Utility Belt (CUB)
+
+Would you like to know more?
+
+* https://docs.confluent.io/platform/current/installation/docker/development.html#confluent-platform-utility-belt-cub
+* https://github.com/confluentinc/kafka-images/blob/master/kafka-connect-base/include/etc/confluent/docker/ensure
+* https://github.com/confluentinc/confluent-docker-utils/blob/master/confluent/docker_utils/cub.py
+* https://github.com/confluentinc/common-docker/blob/master/utility-belt/src/main/java/io/confluent/admin/utils/cli/KafkaReadyCommand.java
+
+=== Secret Provider Library not in CUB Classpath
+
+The CUB has its own classpath independet from Kafka Connect and therefore cannot find the Config Provider class.
+
+
+=== Kafka Connect Library not in CUB Classpath
+
+
+=== Lag of Plugin Isolation Support of CUB
+
+CUB does not support plugin isolation like Kafka Connect. CUB uses the Kafka AdminClient, to which Config Provider support was added in Kafka 2.3.0 with link:https://cwiki.apache.org/confluence/x/S4kCBg[KIP-421] (see <<Configuration Externalization for Kafka Clients and Kafka Broker>>). However, the Config Provders are just loaded as part of the Classpath (see <<Isolated Config Provider Loading only Supported by Kafka Connect>>).
+
+If there are incompatibilities with libraries, which is the case for the Lenses Secret Provider, it is not possible to use the provider.
+In case of the Lenses Secret Provider the cause for the incompatibility is Scala. The Secret Provider depends on Scala 2.12, but since Confluent 6.0.0 Apache Kafka with Scala 2.13 is used. Therefore, if CUB is used, the Secret Provider works only for Confluent Docker images before version 6.0.0.
+
+== Configuration Externalization for Kafka Clients and Kafka Broker
+
+Configuration externalization was introduced with KIP-297 for Kafka Connect in version 2.0.0. In version 2.3.0 this capability was extended to broker, consumer, producer, admin client, and streams with link:https://cwiki.apache.org/confluence/x/S4kCBg[KIP-421].
+
+Would you like to know more?
+
+* https://cwiki.apache.org/confluence/display/KAFKA/KIP-297%3A+Externalizing+Secrets+for+Connect+Configurations
+* link:https://cwiki.apache.org/confluence/x/S4kCBg[KIP-421: Automatically resolve external configurations]
+
+=== Lenses Azure Key Vault Secret Provider for all Components
+
+The Lenses Azure Key Vault Secret Provider has a dependency to the connect library. However, the only class which is used is `link:https://github.com/lensesio/secret-provider/search?q=org.apache.kafka.connect[org.apache.kafka.connect.errors.ConnectException]`. If this dependency would be removed and for example a `org.apache.kafka.common.KafkaException` used instead the link:https://docs.lenses.io/4.2/integrations/connectors/secret-providers/[Lenses Kafka Connect Secrets Provider] could also be used for other Kafka components like broker, consumer and producer. 
+
+Would you like to know more?
+
+* https://github.com/lensesio/secret-provider/search?q=org.apache.kafka.connect
+* https://docs.lenses.io/4.2/integrations/connectors/secret-providers/
+
+== Isolated Config Provider Loading only Supported by Kafka Connect
+
+Would you like to know more?
+
+* link:https://cwiki.apache.org/confluence/x/S4kCBg[KIP-421: Automatically resolve external configurations]
+* https://github.com/apache/kafka/blob/99b9b3e84f4e98c3f07714e1de6a139a004cbc5b/clients/src/main/java/org/apache/kafka/common/config/AbstractConfig.java#L550
+
+== Whats Next?
+
+As mentioned Config Provider are supported for other Kafka components. We will have a look at those components (broker, clients, connect and streans) and also Ksql and evalute how secret externalization with Config provider can be used. 
+
+The usage of config providers together with Kafka Connect is for sure a good practice. The ability to run new connectors by just deploying a json configuration during runtime to a Kafka Connect cluster needs an approach to provide secrets in a save way.
+
+However, for deployments like ksql, brokers or kafka clients typically secrets needs only be provided once during deploymemt time. For such use cases maybe other approaches are better suited. For example secrets can be requested before an application is started and then staticaly passed to it. Often Kafka clients are also used with frameworks with Spring wich already support config externalization mechanisms.
+
+The feature of Config Providers to be able to provide config updates during runtime may be a use full use case at least for brokers and ksql to update keystore secrets after certificate renewal.
+
+If it makes sense to use Config Provider also for other Kafka components, we may come back to the question if it may make sense to include the Kafka Connect plugin mechanism also into the other Kafka components to support isolation for Config Providers.
+
+Another interesting question with regards to this is how certificates and keystores can be provided and automatic certificate renewal for broker and clients can be achieved.
+
+The question of how credentials can be provided to applications in a save way is also very important. It is maybe worth to evaluate different approaches to provide credentials to applications within Kubernetes but also to applications which are running directly on a host. One approach for example would be to use the side car pattern to inject secrets from a secret manager like Hashicorp Vault or Azure Key Vault to a container as file or environment variables.
