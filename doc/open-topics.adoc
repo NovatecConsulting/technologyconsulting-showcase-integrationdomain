@@ -137,7 +137,7 @@ NOTE: We implemented this change and created a pull request for the Azure SDK fo
 The pull request has been accapted and released with link:https://github.com/Azure/azure-sdk-for-java/blob/azure-core_1.16.0/sdk/core/azure-core/src/main/java/com/azure/core/implementation/http/HttpClientProviders.java[Azure Core 1.16.0].
 
 
-NOTE: We are already prepared the integration into the Lenses Secret Provider (see https://github.com/ueisele/secret-provider/tree/feature/connect-plugin-support). If the final version of Azure KeyVault Secrets library with the new Azure Core library has been releases, we will alse create a pull request for the Lenses Secret Provider.
+NOTE: We are already prepared the integration into the Lenses Secret Provider (see https://github.com/ueisele/secret-provider/tree/feature/connect-plugin-support) and created a pull request for it (https://github.com/lensesio/secret-provider/pull/27).
 
 == Enable usage of Lenses secret provider together with Confluent Docker images version 6 and higher
 
